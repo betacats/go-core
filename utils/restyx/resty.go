@@ -78,7 +78,7 @@ func WithTracerName(name string) Option {
 // 封装 resty 的 R() 方法，自动处理 span 生命周期
 func (c *Client) Execute(req *resty.Request, method, url string) (*resty.Response, error) {
 	// 从请求中提取信息用于追踪
-	reqBody, _ := json.Marshal(req.QueryParam) // 获取查询参数或请求体
+	reqBody, _ := json.Marshal(c.parseData(req))
 	ctx := req.Context()
 
 	// 创建 span
@@ -139,4 +139,18 @@ func (c *Client) Execute(req *resty.Request, method, url string) (*resty.Respons
 	}
 
 	return resp, err
+}
+
+// parseData 解析请求数据
+func (c *Client) parseData(req *resty.Request) (requestData map[string]interface{}) {
+	requestData = map[string]interface{}{
+		"header": req.Header,
+		"query":  req.QueryParam,
+		"form":   req.FormData,
+		"raw":    req.RawPathParams,
+		"path":   req.PathParams,
+		"body":   req.Body,
+	}
+
+	return requestData
 }

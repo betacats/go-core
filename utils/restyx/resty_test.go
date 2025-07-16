@@ -17,18 +17,23 @@ func TestResty(t *testing.T) {
 
 	var baseUrl string = "https://example.com"
 
-	reqParams := map[string]string{
-		"status": "1",
-	}
 	resp := RestyResp{}
 	req := client.R().
 		SetHeader("Authorization", "your token").
-		SetQueryParams(reqParams).
+		SetQueryParams(map[string]string{
+			"status": "1",
+		}).
+		SetFormData(map[string]string{
+			"name": "张三",
+		}).
+		SetBody(map[string]interface{}{
+			"age": 10,
+		}).
 		SetPathParam("shopID", "1").
 		SetResult(resp)
 
 	url := fmt.Sprintf("%s/shop/{shopID}", baseUrl) // -> https://example.com/shop/1?status=1
-	ret, err := client.Execute(req, http.MethodGet, url)
+	ret, err := client.Execute(req, http.MethodPost, url)
 	if err != nil {
 		t.Error(err)
 		return

@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/segmentio/kafka-go"
@@ -74,20 +76,33 @@ func GetProducerByTopic(topic string) (*KafkaProducer, error) {
 	return val.(*KafkaProducer), nil
 }
 
+// 判断是否为需要重连的连接错误
+func isConnectionError(err error) bool {
+	return errors.Is(err, net.ErrClosed) ||
+		errors.Is(err, kafka.LeaderNotAvailable) ||
+		errors.Is(err, io.EOF) ||
+		errors.Is(err, syscall.EPIPE) ||
+		errors.Is(err, syscall.ECONNRESET)
+}
+
 // Publish 发布消息，自动重连
 func (k *KafkaProducer) Publish(ctx context.Context, msg []kafka.Message) error {
-	if err := k.conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
+	var err error
+	if err = k.conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
 		return err
 	}
-	_, err := k.conn.WriteMessages(msg...)
+	_, err = k.conn.WriteMessages(msg...)
 	if err != nil {
-		// 检查是否为连接类错误
-		if errors.Is(err, net.ErrClosed) || errors.Is(err, kafka.LeaderNotAvailable) {
+		// 扩展错误检查范围
+		if isConnectionError(err) {
 			// 尝试重连
 			if reconnectErr := k.reconnect(ctx); reconnectErr != nil {
 				return reconnectErr
 			}
 			// 重连后重试
+			if err = k.conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
+				return err
+			}
 			_, err = k.conn.WriteMessages(msg...)
 		}
 	}
@@ -96,6 +111,7 @@ func (k *KafkaProducer) Publish(ctx context.Context, msg []kafka.Message) error 
 
 // 自动重连
 func (k *KafkaProducer) reconnect(ctx context.Context) error {
+	// 触发重连了
 	if k.conn != nil {
 		_ = k.conn.Close()
 	}
@@ -118,6 +134,8 @@ func (k *KafkaProducer) reconnect(ctx context.Context) error {
 		return err
 	}
 	k.conn = kConn
+	// 将重连后的生产者放回连接池
+	producerPool.Store(k.topic, k)
 	return nil
 }
 

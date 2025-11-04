@@ -3,6 +3,7 @@ module github.com/betacats/go-core
 go 1.24.4
 
 require (
+	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
 	github.com/go-resty/resty/v2 v2.16.5
 	github.com/nacos-group/nacos-sdk-go/v2 v2.3.3
 	github.com/segmentio/kafka-go v0.4.48

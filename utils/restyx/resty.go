@@ -58,22 +58,6 @@ func (c *Client) setDefaultOTELTransport() {
 	c.SetTransport(transport)
 }
 
-// Option 选项：设置重试配置
-func WithRetry(count int, waitTime, maxWaitTime time.Duration) Option {
-	return func(c *Client) {
-		c.SetRetryCount(count)
-		c.SetRetryWaitTime(waitTime)
-		c.SetRetryMaxWaitTime(maxWaitTime)
-	}
-}
-
-// Option 选项：自定义 OTEL 追踪器名称
-func WithTracerName(name string) Option {
-	return func(c *Client) {
-		c.tracer = otel.Tracer(name)
-	}
-}
-
 // Execute 执行 HTTP 请求并自动记录 OTEL 追踪
 // 封装 resty 的 R() 方法，自动处理 span 生命周期
 func (c *Client) Execute(req *resty.Request, method, url string) (*resty.Response, error) {
@@ -153,4 +137,64 @@ func (c *Client) parseData(req *resty.Request) (requestData map[string]interface
 	}
 
 	return requestData
+}
+
+// SetTransportConfig 配置HTTP transport
+func (c *Client) SetTransportConfig(config *http.Transport) *Client {
+	otelTr := otelhttp.NewTransport(config,
+		otelhttp.WithPropagators(propagation.NewCompositeTextMapPropagator(
+			propagation.TraceContext{},
+			propagation.Baggage{},
+		)),
+	)
+	c.SetTransport(otelTr)
+	return c
+}
+
+// Option 选项：设置重试配置
+func WithRetry(count int, waitTime, maxWaitTime time.Duration) Option {
+	return func(c *Client) {
+		if count < 0 {
+			return
+		}
+		c.SetRetryCount(count)
+		c.SetRetryWaitTime(waitTime)
+		c.SetRetryMaxWaitTime(maxWaitTime)
+	}
+}
+
+// Option 选项：自定义 OTEL 追踪器名称
+func WithTracerName(name string) Option {
+	return func(c *Client) {
+		c.tracer = otel.Tracer(name)
+	}
+}
+
+// Option 选项：设置请求超时时间
+func WithTimeout(timeout time.Duration) Option {
+	return func(c *Client) {
+		if timeout > 0 {
+			c.SetTimeout(timeout)
+		}
+	}
+}
+
+// Option 选项：配置请求头
+func WithHeaders(headers map[string]string) Option {
+	return func(c *Client) {
+		if headers != nil {
+			for k, v := range headers {
+				c.SetHeader(k, v)
+			}
+		}
+	}
+}
+
+// Option 选项：配置基础地址
+func WithBaseURL(baseURL string) Option {
+	return func(c *Client) {
+		if baseURL != "" {
+			c.SetBaseURL(baseURL)
+		}
+	}
 }

@@ -7,11 +7,13 @@ require (
 	github.com/go-resty/resty/v2 v2.16.5
 	github.com/nacos-group/nacos-sdk-go/v2 v2.3.3
 	github.com/segmentio/kafka-go v0.4.48
+	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.10.0
 	github.com/zeromicro/go-zero v1.6.6
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0
 	go.opentelemetry.io/otel v1.37.0
 	go.opentelemetry.io/otel/trace v1.37.0
+	golang.org/x/exp v0.0.0-20251209150349-8475f28825e9
 )
 
 require (
@@ -88,7 +90,7 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.10.0 // indirect

@@ -8,8 +8,8 @@ import (
 	rd "github.com/go-redis/redis/v8"
 )
 
-// createClient create a client with option
-func createClient(ctx context.Context, opt *RedisOption) (*rd.Client, error) {
+// CreateClient create a client with option
+func CreateClient(ctx context.Context, opt *RedisOption) (*rd.Client, error) {
 	opts := &rd.Options{
 		Addr:         opt.Addr,
 		Username:     opt.Username,

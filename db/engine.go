@@ -7,8 +7,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// createEngine create a new engine with option
-func createEngine(opt *DataBaseOption, config gorm.Config) (*gorm.DB, error) {
+// CreateEngine create a new engine with option
+func CreateEngine(opt *DataBaseOption, config gorm.Config) (*gorm.DB, error) {
 
 	db, err := gorm.Open(mysql.Open(opt.Dsn), &config)
 

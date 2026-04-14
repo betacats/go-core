@@ -8,7 +8,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
-	zeroConf "github.com/zeromicro/go-zero/core/conf"
+	"gopkg.in/yaml.v3"
 )
 
 type Nacosx struct {
@@ -109,5 +109,7 @@ func (s *Nacosx) MustLoad(v interface{}) {
 		fmt.Println(err.Error())
 		return
 	}
-	zeroConf.LoadConfigFromYamlBytes([]byte(a), v)
+	if err = yaml.Unmarshal([]byte(a), v); err != nil {
+		return
+	}
 }

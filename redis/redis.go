@@ -5,23 +5,23 @@ import (
 	"fmt"
 	"time"
 
-	rd "github.com/go-redis/redis/v8"
+	rd "github.com/redis/go-redis/v9"
 )
 
 // CreateClient create a client with option
 func CreateClient(ctx context.Context, opt *RedisOption) (*rd.Client, error) {
 	opts := &rd.Options{
-		Addr:         opt.Addr,
-		Username:     opt.Username,
-		Password:     opt.Password,
-		DB:           opt.DB,
-		MaxRetries:   opt.MaxRetries,
-		PoolSize:     opt.PoolSize,
-		MinIdleConns: opt.MinIdleConns,
-		DialTimeout:  time.Millisecond * time.Duration(opt.ConnectTimeout),
-		ReadTimeout:  time.Millisecond * time.Duration(opt.ReadTimeout),
-		WriteTimeout: time.Millisecond * time.Duration(opt.WriteTimeout),
-		IdleTimeout:  time.Second * time.Duration(opt.IdleTimeout),
+		Addr:            opt.Addr,
+		Username:        opt.Username,
+		Password:        opt.Password,
+		DB:              opt.DB,
+		MaxRetries:      opt.MaxRetries,
+		PoolSize:        opt.PoolSize,
+		MinIdleConns:    opt.MinIdleConns,
+		DialTimeout:     time.Millisecond * time.Duration(opt.ConnectTimeout),
+		ReadTimeout:     time.Millisecond * time.Duration(opt.ReadTimeout),
+		WriteTimeout:    time.Millisecond * time.Duration(opt.WriteTimeout),
+		ConnMaxIdleTime: time.Second * time.Duration(opt.IdleTimeout),
 	}
 
 	client := rd.NewClient(opts)

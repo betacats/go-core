@@ -128,7 +128,9 @@ func (c *Client) Execute(req *resty.Request, method, url string) (*resty.Respons
 			attribute.Int("http.status_code", resp.StatusCode()),
 			attribute.String("resp.body", string(resp.Body())),
 		)
-		resp.RawResponse.Header.Set("X-Trace-ID", traceID)
+		if resp.RawResponse != nil {
+			resp.RawResponse.Header.Set("X-Trace-ID", traceID)
+		}
 	}
 
 	// 记录错误

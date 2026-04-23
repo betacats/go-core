@@ -8,7 +8,6 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
-	"gopkg.in/yaml.v3"
 )
 
 type Nacosx struct {
@@ -104,12 +103,14 @@ func (s *Nacosx) GetServiceInstances() ([]model.Instance, error) {
 }
 
 func (s *Nacosx) MustLoad(v interface{}) {
-	a, err := s.GetConfig()
+	configContent, err := s.GetConfig()
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Printf("failed to get config from nacos: %v\n", err)
 		return
 	}
-	if err = yaml.Unmarshal([]byte(a), v); err != nil {
+	if err = LoadFromYamlBytes([]byte(configContent), v); err != nil {
+		fmt.Printf("failed to load config: %v\n", err)
 		return
 	}
+
 }

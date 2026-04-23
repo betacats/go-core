@@ -5,14 +5,12 @@ go 1.24.4
 require (
 	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
 	github.com/go-resty/resty/v2 v2.16.5
-	github.com/google/uuid v1.6.0
 	github.com/nacos-group/nacos-sdk-go/v2 v2.3.3
 	github.com/pelletier/go-toml/v2 v2.3.0
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/segmentio/kafka-go v0.4.48
 	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.11.1
-	github.com/zeromicro/go-zero v1.10.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0
 	go.opentelemetry.io/otel v1.40.0
 	go.opentelemetry.io/otel/trace v1.40.0

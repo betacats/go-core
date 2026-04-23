@@ -10,8 +10,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zeromicro/go-zero/core/lang"
-	"github.com/zeromicro/go-zero/core/stringx"
+	"github.com/betacats/go-core/utils/lang"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -269,7 +269,7 @@ func parseKeyAndOptions(tagName string, field reflect.StructField) (string, *fie
 	cache, ok := optionsCache[value]
 	cacheLock.RUnlock()
 	if ok {
-		return stringx.TakeOne(cache.key, field.Name), cache.options, cache.err
+		return TakeOne(cache.key, field.Name), cache.options, cache.err
 	}
 
 	key, options, err := doParseKeyAndOptions(field, value)
@@ -281,7 +281,16 @@ func parseKeyAndOptions(tagName string, field reflect.StructField) (string, *fie
 	}
 	cacheLock.Unlock()
 
-	return stringx.TakeOne(key, field.Name), options, err
+	return TakeOne(key, field.Name), options, err
+}
+
+// TakeOne returns valid string if not empty or later one.
+func TakeOne(valid, or string) string {
+	if len(valid) > 0 {
+		return valid
+	}
+
+	return or
 }
 
 // support below notations:
@@ -634,11 +643,11 @@ func validateValueInOptions(val any, options []string) error {
 	if len(options) > 0 {
 		switch v := val.(type) {
 		case string:
-			if !stringx.Contains(options, v) {
+			if !slices.Contains(options, v) {
 				return fmt.Errorf(`error: value %q is not defined in options "%v"`, v, options)
 			}
 		default:
-			if !stringx.Contains(options, Repr(v)) {
+			if !slices.Contains(options, lang.Repr(v)) {
 				return fmt.Errorf(`error: value "%v" is not defined in options "%v"`, val, options)
 			}
 		}

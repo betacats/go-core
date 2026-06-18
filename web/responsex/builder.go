@@ -51,7 +51,7 @@ func (b *Builder) BuildError(ctx context.Context, err error) Response {
 		Result: parsed.Result,
 		Code:   parsed.Code,
 		Msg:    parsed.Msg,
-		Data:   b.opts.ErrorData(ctx, parsed),
+		Data:   parsed.Data,
 	}
 	b.attachTraceField(ctx, &resp)
 

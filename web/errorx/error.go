@@ -8,14 +8,7 @@ type CodeError struct {
 	Result ResultCode `json:"result"`
 	Code   int        `json:"code"`
 	Msg    string     `json:"msg"`
-}
-
-// CodeErrorResponse 是遗留的错误响应载荷结构。
-// Deprecated: 新代码请使用 responsex.Builder.BuildError 构建统一响应。
-type CodeErrorResponse struct {
-	Result ResultCode `json:"result"`
-	Code   int        `json:"code"`
-	Msg    string     `json:"msg"`
+	Data   any        `json:"data,omitempty"`
 }
 
 func (e *CodeError) normalizedCode() int {
@@ -47,11 +40,15 @@ func NewCodeMsgError(code int, msg string) error {
 	return &CodeError{Result: ResultFailure, Code: code, Msg: msg}
 }
 
+// NewCodeMsgDataError 根据原始数值、文案与 data 构造失败错误。
+func NewCodeMsgDataError(code int, msg string, data any) error {
+	return &CodeError{Result: ResultFailure, Code: code, Msg: msg, Data: data}
+}
+
 // NewDefaultMsgError 使用 Unknown 错误码构造失败错误。
 func NewDefaultMsgError(msg string) error {
 	return NewCodeMsgError(Unknown.Value(), msg)
 }
-
 
 // NewDefaultError 构造一个 Unknown 错误码的默认失败错误。
 func NewDefaultError() error {
@@ -81,12 +78,10 @@ func (e *CodeError) ResponseMsg() string {
 	return e.Error()
 }
 
-// Data 返回遗留的错误响应结构。
-// Deprecated: 新代码请直接使用 responsex.Builder.BuildError 生成统一响应。
-func (e *CodeError) Data() *CodeErrorResponse {
-	return &CodeErrorResponse{
-		Result: ResultFailure,
-		Code:   e.normalizedCode(),
-		Msg:    e.Error(),
+// ResponseData 让 CodeError 能被 responsex.DecodeResponseCoder 识别并透传 data。
+func (e *CodeError) ResponseData() any {
+	if e == nil {
+		return nil
 	}
+	return e.Data
 }

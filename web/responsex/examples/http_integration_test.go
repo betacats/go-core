@@ -23,12 +23,10 @@ func Example() {
 	})
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := responsex.WithRequestMeta(r.Context(), responsex.RequestMeta{
-			Method: r.Method,
-			Path:   r.URL.Path,
-			Body:   `{"sku":"dog-food"}`,
-			Env:    "prod",
-		})
+		ctx, metaErr := responsex.WithRequestMetaFromHTTPRequest(r)
+		if metaErr != nil {
+			ctx = r.Context()
+		}
 
 		if err := createOrder(); err != nil {
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")

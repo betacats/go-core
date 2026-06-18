@@ -1,6 +1,10 @@
 package responsex
 
-import "context"
+import (
+	"context"
+
+	"github.com/betacats/go-core/web/errorx"
+)
 
 // ResultCode 表示业务处理结果。
 // true 表示成功，false 表示失败。
@@ -143,6 +147,10 @@ func (o Options) withDefaults() Options {
 	}
 	if o.ShouldReport == nil {
 		o.ShouldReport = func(ctx context.Context, parsed ParsedError) bool {
+			// 只上报系统错误，业务错误不报。
+			if parsed.Code > errorx.Unauthenticated.Value() {
+				return false
+			}
 			return true
 		}
 	}
@@ -156,5 +164,3 @@ func (o Options) withDefaults() Options {
 	}
 	return o
 }
-
-

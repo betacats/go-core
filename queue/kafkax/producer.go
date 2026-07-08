@@ -2,6 +2,7 @@ package kafkax
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -17,10 +18,11 @@ import (
 var producerPool sync.Map // key: topic, value: *KafkaProducer
 
 type KafkaConfig struct {
-	Username string
-	Password string
-	GroupID  string
-	Brokers  string
+	Username  string
+	Password  string
+	GroupID   string
+	Brokers   string
+	EnableTLS bool // 是否启用 TLS，默认 false（不启用）
 }
 
 type KafkaProducer struct {
@@ -49,6 +51,9 @@ func newKafkaProducerWithTopic(ctx context.Context, c *KafkaConfig, topic string
 		DualStack:     true,
 		SASLMechanism: mechanism,
 		KeepAlive:     10 * time.Second,
+	}
+	if c.EnableTLS {
+		dialer.TLS = &tls.Config{InsecureSkipVerify: true}
 	}
 	kConn, err := dialer.DialLeader(
 		ctx,
@@ -124,6 +129,9 @@ func (k *KafkaProducer) reconnect(ctx context.Context) error {
 		DualStack:     true,
 		SASLMechanism: mechanism,
 		KeepAlive:     10 * time.Second,
+	}
+	if k.config.EnableTLS {
+		dialer.TLS = &tls.Config{InsecureSkipVerify: true}
 	}
 	kConn, err := dialer.DialLeader(
 		ctx,

@@ -2,12 +2,21 @@ package kafkax
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/segmentio/kafka-go"
 )
 
+// skipInCI 在 CI 环境中跳过需要真实 Kafka 连接的集成测试
+func skipInCI(t *testing.T) {
+	if os.Getenv("CI") == "true" {
+		t.Skip("跳过 CI 环境中的 Kafka 集成测试")
+	}
+}
+
 func TestKafkaProducerPublish(t *testing.T) {
+	skipInCI(t)
 	cfg := &KafkaConfig{
 		Username: "test",
 		Password: "test",

@@ -15,14 +15,23 @@ import (
 	"github.com/segmentio/kafka-go/sasl/plain"
 )
 
-var producerPool sync.Map // key: topic, value: *KafkaProducer
+var producerPool sync.Map // key: name:topic, value: *KafkaProducer
 
 type KafkaConfig struct {
 	Username  string
 	Password  string
 	GroupID   string
 	Brokers   string
-	EnableTLS bool // 是否启用 TLS，默认 false（不启用）
+	EnableTLS bool   // 是否启用 TLS，默认 false（不启用）
+	Name      string // 实例标识，用于区分多个 Kafka 实例，为空时兼容旧行为；如果项目有多个 Kafka 实例，请务必设置！
+}
+
+// getPoolKey 构造 producerPool 的 key
+func getPoolKey(kafkaName, topic string) string {
+	if kafkaName == "" {
+		return topic // 向后兼容：未设置 Name 时退化为纯 topic
+	}
+	return kafkaName + ":" + topic
 }
 
 type KafkaProducer struct {
@@ -35,7 +44,8 @@ type KafkaProducer struct {
 func InitProducerForTopics(ctx context.Context, c *KafkaConfig, topics []string) {
 	for _, topic := range topics {
 		producer := newKafkaProducerWithTopic(ctx, c, topic)
-		producerPool.LoadOrStore(topic, producer)
+		key := getPoolKey(c.Name, topic)
+		producerPool.LoadOrStore(key, producer)
 		fmt.Println("Kafka producer initialized for topic:", topic)
 	}
 }
@@ -73,8 +83,9 @@ func newKafkaProducerWithTopic(ctx context.Context, c *KafkaConfig, topic string
 }
 
 // GetProducerByTopic 获取指定 topic 的 producer
-func GetProducerByTopic(topic string) (*KafkaProducer, error) {
-	val, ok := producerPool.Load(topic)
+func GetProducerByTopic(kafkaName, topic string) (*KafkaProducer, error) {
+	key := getPoolKey(kafkaName, topic)
+	val, ok := producerPool.Load(key)
 	if !ok {
 		return nil, errors.New("producer not found for topic: " + topic)
 	}
@@ -143,7 +154,7 @@ func (k *KafkaProducer) reconnect(ctx context.Context) error {
 	}
 	k.conn = kConn
 	// 将重连后的生产者放回连接池
-	producerPool.Store(k.topic, k)
+	producerPool.Store(getPoolKey(k.config.Name, k.topic), k)
 	return nil
 }
 

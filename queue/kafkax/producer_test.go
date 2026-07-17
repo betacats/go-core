@@ -28,7 +28,7 @@ func TestKafkaProducerPublish(t *testing.T) {
 	InitProducerForTopics(ctx, cfg, []string{topic})
 
 	// 获取指定 topic 的 producer
-	producer, err := GetProducerByTopic(topic)
+	producer, err := GetProducerByTopic(cfg, topic)
 	if err != nil {
 		t.Fatalf("获取 producer 失败: %v", err)
 	}

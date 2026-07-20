@@ -28,7 +28,7 @@ func TestKafkaProducerPublish(t *testing.T) {
 	InitProducerForTopics(ctx, cfg, []string{topic})
 
 	// 获取指定 topic 的 producer
-	producer, err := GetProducerByTopic(cfg, topic)
+	producer, err := GetProducerByTopic(topic)
 	if err != nil {
 		t.Fatalf("获取 producer 失败: %v", err)
 	}
@@ -41,5 +41,34 @@ func TestKafkaProducerPublish(t *testing.T) {
 		t.Fatalf("消息发送失败: %v", err)
 	} else {
 		t.Log("消息发送成功")
+	}
+}
+
+func TestGetProducerByTopicCompatibility(t *testing.T) {
+	topic := "test-topic"
+	kafkaName := "cluster-a"
+
+	legacyProducer := &KafkaProducer{}
+	namedProducer := &KafkaProducer{}
+
+	producerPool.Store(getPoolKey("", topic), legacyProducer)
+	producerPool.Store(getPoolKey(kafkaName, topic), namedProducer)
+	defer producerPool.Delete(getPoolKey("", topic))
+	defer producerPool.Delete(getPoolKey(kafkaName, topic))
+
+	gotLegacy, err := GetProducerByTopic(topic)
+	if err != nil {
+		t.Fatalf("旧方法获取 producer 失败: %v", err)
+	}
+	if gotLegacy != legacyProducer {
+		t.Fatalf("旧方法返回了错误的 producer")
+	}
+
+	gotNamed, err := GetProducerByTopicWithKafkaName(kafkaName, topic)
+	if err != nil {
+		t.Fatalf("新方法获取 producer 失败: %v", err)
+	}
+	if gotNamed != namedProducer {
+		t.Fatalf("新方法返回了错误的 producer")
 	}
 }

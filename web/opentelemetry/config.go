@@ -11,7 +11,7 @@ func NewConfig(serviceName, endpoint, urlPath string) Config {
 		ErrorTTLSeconds:    30,
 		BatchTimeout:       5,
 		MaxExportBatchSize: 512,
-		Batcher:            "otlphttp",
+		Batcher:            "batch",
 	}
 }
 

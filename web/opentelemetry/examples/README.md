@@ -34,7 +34,7 @@ func main() {
         "ARMS-USERNAME": c.Telemetry.Endpoint,
         "ARMS-PASSWORD": c.Telemetry.Endpoint,
     }
-    cfg.NormalSampler = 0.1                               // 正常 span 10% 采样
+    cfg.WithNormalSampler(0.1)                             // 正常 span 10% 采样
 
     shutdown, err := opentelemetry.InitTracing(cfg)
     if err != nil {
@@ -48,17 +48,19 @@ func main() {
 
 ### 2. 修改 `cmd/middleware.go` — 注册中间件
 
-> 顺序决定：所有中间件执行完 → `BodyRecorder` 截获完整响应 → 判断业务错误
+> `RecoverMiddleware` 必须第一个注册，捕获 panic 并标记 span Error 后交给下游。
 
 ```go
-server.Use(MiddlewareWithSentry())        // panic 恢复 → 写错误 body
-server.Use(middlewareWithRedisToken(ctx))  // token 校验
 server.Use(func(next http.HandlerFunc) http.HandlerFunc {
-    return opentelemetry.Middleware(next).ServeHTTP  // 拦截 body 标记 Error ← 必须最后
+    return opentelemetry.RecoverMiddleware(next).ServeHTTP   // 1. panic 恢复 + 标记 span Error
+})
+server.Use(middlewareWithRedisToken(ctx))                     // 2. token 校验
+server.Use(func(next http.HandlerFunc) http.HandlerFunc {
+    return opentelemetry.Middleware(next).ServeHTTP           // 3. 拦截 body 标记业务 Error
 })
 ```
 
-### 3. handler 中使用统—响应
+### 3. handler 中使用统一响应
 
 handler 无需感知 tracing，只需正常返回 error：
 
@@ -92,22 +94,26 @@ func CreateOrderHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 }
 ```
 
-`httpx.ErrorCtx` / `httpx.OkJsonCtx` 输出响应 → `opentelemetry.Middleware` 截获 body → 检测 `result:false` → 标记 span Error → 整条 trace 全量上报 ARMS。
+```
+httpx.ErrorCtx/httpx.OkJsonCtx 输出响应
+    → opentelemetry.Middleware 截获 body
+    → 检测 result:false 或 code!=0
+    → 标记 span Error → 整条 trace 全量上报 ARMS
+```
 
 ---
 
 ## gRPC 服务接入（如 rpc-user）
 
-### 1. 修改 `cmd/cobra.go`（同上）
+### 1. 修改 `cmd/cobra.go`
 
 ```go
 c.Telemetry.Disabled = true
-c.Telemetry.Sampler = 1.0
 
 cfg := opentelemetry.NewConfig(
     c.Telemetry.Name,
     c.Telemetry.Endpoint,
-    c.Telemetry.OtlpHttpPath,
+    cfg.EcsOtlpHttpPath,
 )
 
 shutdown, err := opentelemetry.InitTracing(cfg)
@@ -138,18 +144,40 @@ func (l *CreateOrderLogic) CreateOrder(in *pb.CreateOrderReq) (*pb.CreateOrderRe
 
 ## Config 字段速查
 
-| 字段 | 默认值 | 说明 |
+### 必填参数（`NewConfig` 位置参数）
+
+| 参数 | 说明 |
+|---|---|
+| `serviceName` | 服务名，写入 span resource |
+| `endpoint` | OTLP collector 地址（ARMS） |
+| `urlPath` | OTLP HTTP 路径 |
+
+### 属性赋值
+
+```go
+cfg.Headers = map[string]string{"ARMS-USERNAME": "u", "ARMS-PASSWORD": "p"}
+cfg.Insecure = true
+```
+
+### 链式方法
+
+| 方法 | 默认值 | 说明 |
 |---|---|---|
-| `ServiceName` | **必填** | 服务名，写入 span resource |
-| `Endpoint` | **必填** | OTLP collector 地址（ARMS） |
-| `URLPath` | **必填** | OTLP HTTP 路径 |
-| `NormalSampler` | 0.1 | 正常 span 采样率 [0,1] |
-| `BatchTimeout` | 5 | 批量导出最大等待秒数 |
-| `MaxExportBatchSize`` | 512 | 单次批量最大 span 数 |
-| `Insecure` | false | 跳过 TLS |
-| `Headers` | nil | OTLP 请求附加 Header（ARMS 认证） |
-| `LRUMaxSize` | 10000 | 错误 traceID 缓存上限 |
-| `ErrorTTLSeconds` | 30 | 错误 traceID 保留秒数 |
+| `WithNormalSampler(v)` | 0.1 | 正常 span 采样率 [0,1] |
+| `WithLRUMaxSize(v)` | 10000 | 错误 traceID 缓存上限 |
+| `WithErrorTTLSeconds(v)` | 30 | 错误 traceID 保留秒数 |
+| `WithBatchTimeout(v)` | 5 | 批量导出最大等待秒数 |
+| `WithMaxExportBatchSize(v)` | 512 | 单次批量最大 span 数 |
+| `WithBatcher(v)` | "batch" | 保留供后续扩展 |
+
+---
+
+## 中间件速查
+
+| 中间件 | 注册顺序 | 作用 |
+|---|---|---|
+| `RecoverMiddleware` | 第一个 | 捕获 panic → 标记 span Error → 返回统一错误 body |
+| `Middleware` | 最后一个 | 拦截响应 body → 检测 `result:false` → 标记 span Error |
 
 ---
 

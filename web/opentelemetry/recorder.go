@@ -3,10 +3,14 @@ package opentelemetry
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/betacats/go-core/web/errorx"
+	"github.com/betacats/go-core/web/responsex"
 )
 
 // BodyRecorder 包装 http.ResponseWriter，拦截写入的响应体。
@@ -74,5 +78,44 @@ func Middleware(next http.Handler) http.Handler {
 				span.SetStatus(codes.Error, "business error")
 			}
 		}
+	})
+}
+
+// RecoverMiddleware 返回一个 panic 恢复中间件，捕获 handler 中的 panic。
+//
+// 它会将当前 span 标记为 codes.Error，确保整条 trace 被全量保留，
+// 并向客户端返回统一错误响应。
+//
+// 在 go-zero REST 服务中应注册为第一个中间件：
+//
+//	server.Use(func(next http.HandlerFunc) http.HandlerFunc {
+//	    return opentelemetry.RecoverMiddleware(next).ServeHTTP
+//	})
+func RecoverMiddleware(next http.Handler) http.Handler {
+	builder := responsex.New(responsex.Options{
+		DefaultErrorCode: errorx.Unknown.Value(),
+		DefaultErrorMsg:  errorx.Unknown.Msg(),
+	})
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if v := recover(); v != nil {
+				if span := trace.SpanFromContext(r.Context()); span.IsRecording() {
+					span.SetStatus(codes.Error, fmt.Sprintf("panic recovered: %v", v))
+				}
+
+				err := errorx.NewCodeMsgDataError(
+					errorx.Unknown.Value(),
+					"panic recovered: "+fmt.Sprint(v),
+					map[string]any{},
+				)
+				resp := builder.BuildError(r.Context(), err)
+
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(resp)
+			}
+		}()
+		next.ServeHTTP(w, r)
 	})
 }

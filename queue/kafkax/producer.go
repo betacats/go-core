@@ -82,14 +82,20 @@ func newKafkaProducerWithTopic(ctx context.Context, c *KafkaConfig, topic string
 	}
 }
 
-// GetProducerByTopic 获取指定 topic 的 producer
-func GetProducerByTopic(kafkaName, topic string) (*KafkaProducer, error) {
+// GetProducerByTopicWithKafkaName 获取指定 kafkaName + topic 的 producer
+func GetProducerByTopicWithKafkaName(kafkaName, topic string) (*KafkaProducer, error) {
 	key := getPoolKey(kafkaName, topic)
 	val, ok := producerPool.Load(key)
 	if !ok {
 		return nil, errors.New("producer not found for topic: " + topic)
 	}
 	return val.(*KafkaProducer), nil
+}
+
+// Deprecated: use GetProducerByTopicWithKafkaName instead.
+// GetProducerByTopic 获取指定 topic 的 producer（兼容旧写法，不传 kafkaName）
+func GetProducerByTopic(topic string) (*KafkaProducer, error) {
+	return GetProducerByTopicWithKafkaName("", topic)
 }
 
 // 判断是否为需要重连的连接错误

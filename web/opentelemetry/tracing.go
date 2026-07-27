@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/semconv/v1.32.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.32.0"
 )
 
 // InitTracing 初始化全局 TracerProvider。
@@ -20,16 +20,14 @@ import (
 // 然后通过 errorAwareExporter 在导出阶段做 trace 级别的智能过滤。
 //
 // 在 go-zero 项目中，调用此函数前应先将 Telemetry.Disabled 设为 true，
-// 并强制覆盖 Sampler = 1.0，避免 go-zero 内置 tracing 干扰。
 func InitTracing(cfg Config) (shutdown func(context.Context) error, err error) {
-	cfg = cfg.withDefaults()
-
 	exp, err := newOTLPExporter(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("opentelemetry: create otlp exporter: %w", err)
 	}
 
 	awareExp := newErrorAwareExporter(exp, cfg)
+	processor := newSpanProcessor(cfg, awareExp)
 
 	res, err := resource.New(context.Background(),
 		resource.WithAttributes(
@@ -43,10 +41,7 @@ func InitTracing(cfg Config) (shutdown func(context.Context) error, err error) {
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithResource(res),
-		sdktrace.WithSpanProcessor(sdktrace.NewBatchSpanProcessor(awareExp,
-			sdktrace.WithBatchTimeout(time.Duration(cfg.BatchTimeout)*time.Second),
-			sdktrace.WithMaxExportBatchSize(cfg.MaxExportBatchSize),
-		)),
+		sdktrace.WithSpanProcessor(processor),
 	)
 
 	otel.SetTracerProvider(tp)
@@ -56,6 +51,14 @@ func InitTracing(cfg Config) (shutdown func(context.Context) error, err error) {
 	}
 
 	return globalShutdown, nil
+}
+
+// newSpanProcessor 根据 cfg.Batcher 创建对应的 SpanProcessor。
+func newSpanProcessor(cfg Config, exp sdktrace.SpanExporter) sdktrace.SpanProcessor {
+	return sdktrace.NewBatchSpanProcessor(exp,
+		sdktrace.WithBatchTimeout(time.Duration(cfg.BatchTimeout)*time.Second),
+		sdktrace.WithMaxExportBatchSize(cfg.MaxExportBatchSize),
+	)
 }
 
 // newOTLPExporter 创建 OTLP HTTP exporter。

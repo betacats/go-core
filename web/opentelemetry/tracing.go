@@ -2,7 +2,6 @@ package opentelemetry
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -46,9 +45,7 @@ func InitTracing(cfg Config) (shutdown func(context.Context) error, err error) {
 
 	otel.SetTracerProvider(tp)
 
-	globalShutdown = func(ctx context.Context) error {
-		return errors.Join(tp.Shutdown(ctx), exp.Shutdown(ctx))
-	}
+	globalShutdown = tp.Shutdown
 
 	return globalShutdown, nil
 }

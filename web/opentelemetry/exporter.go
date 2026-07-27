@@ -19,10 +19,14 @@ import (
 //     后续 batch 中同一 trace 的 span 即使没有 Error，也会被全量保留。
 //  4. 正常 trace（无 Error）的每个 span 按 NormalSampler 独立随机采样。
 type errorAwareExporter struct {
-	inner  sdktrace.SpanExporter
-	cfg    Config
-	lru    *traceLRU
-	mu     sync.Mutex
+	// inner 被包装的真实 SpanExporter（OTLP HTTP exporter）。
+	inner sdktrace.SpanExporter
+	// cfg 配置参数，包含采样率、LRU 容量等。
+	cfg Config
+	// lru 跨 batch 错误 traceID 缓存。
+	lru *traceLRU
+	// mu 保护 lru 并发访问的互斥锁。
+	mu sync.Mutex
 }
 
 func newErrorAwareExporter(inner sdktrace.SpanExporter, cfg Config) *errorAwareExporter {
@@ -92,14 +96,20 @@ func (e *errorAwareExporter) Shutdown(ctx context.Context) error {
 // traceLRU 是一个带有 TTL 过期能力的 LRU 缓存，存储"有 Error 的 traceID"。
 // 用于跨 batch 串联同一 trace 的 span。
 type traceLRU struct {
-	maxSize   int
-	ttl       time.Duration
-	entries   map[trace.TraceID]*lruElement
-	list      []*lruElement
+	// maxSize 缓存最大条目数，超过时淘汰最旧元素。
+	maxSize int
+	// ttl 每条错误 traceID 的保留时长。
+	ttl time.Duration
+	// entries traceID 到链表元素的快速查找映射。
+	entries map[trace.TraceID]*lruElement
+	// list 按添加顺序排列的元素列表，头旧尾新。
+	list []*lruElement
 }
 
 type lruElement struct {
-	tid       trace.TraceID
+	// tid 错误 trace 的 ID。
+	tid trace.TraceID
+	// expiresAt 该条目的过期时间，超过后不再影响采样决策。
 	expiresAt time.Time
 }
 

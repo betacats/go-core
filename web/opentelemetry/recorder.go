@@ -12,7 +12,9 @@ import (
 // BodyRecorder 包装 http.ResponseWriter，拦截写入的响应体。
 // 用于在 HTTP handler 执行后检查响应内容是否为业务错误。
 type BodyRecorder struct {
+	// ResponseWriter 原始 HTTP 响应写入器。
 	http.ResponseWriter
+	// buf 拦截写入数据的缓冲区。
 	buf bytes.Buffer
 }
 

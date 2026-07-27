@@ -77,6 +77,7 @@ func newOTLPExporter(cfg Config) (*otlptrace.Exporter, error) {
 	return otlptrace.New(ctx, client)
 }
 
+// globalShutdown 保存 InitTracing 返回的关闭函数，供 StopTracing 调用。
 var globalShutdown func(context.Context) error
 
 // StopTracing 优雅关闭全局 TracerProvider。

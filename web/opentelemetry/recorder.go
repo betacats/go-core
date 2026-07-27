@@ -2,6 +2,7 @@ package opentelemetry
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -95,6 +96,14 @@ func RecoverMiddleware(next http.Handler) http.Handler {
 	builder := responsex.New(responsex.Options{
 		DefaultErrorCode: errorx.Unknown.Value(),
 		DefaultErrorMsg:  errorx.Unknown.Msg(),
+		TraceFieldMode:   responsex.TraceFieldModeTraceID,
+		TraceFieldExtractor: func(ctx context.Context) string {
+			span := trace.SpanFromContext(ctx)
+			if span.SpanContext().HasTraceID() {
+				return span.SpanContext().TraceID().String()
+			}
+			return ""
+		},
 	})
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

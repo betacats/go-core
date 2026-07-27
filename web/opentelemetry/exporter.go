@@ -117,11 +117,13 @@ func newTraceLRU(maxSize int, ttlSeconds int) *traceLRU {
 	return &traceLRU{
 		maxSize: maxSize,
 		ttl:     time.Duration(ttlSeconds) * time.Second,
-		entries: make(map[trace.TraceID]*lruElement),
+		entries: make(map[trace.TraceID]*lruElement, maxSize),
 		list:    make([]*lruElement, 0, maxSize),
 	}
 }
 
+// contains 检查 traceID 是否在缓存中且未过期。
+// 命中时将元素移到尾部（最近使用）；已过期则移除并返回 false。
 func (l *traceLRU) contains(tid trace.TraceID, now time.Time) bool {
 	el, ok := l.entries[tid]
 	if !ok {
@@ -131,11 +133,20 @@ func (l *traceLRU) contains(tid trace.TraceID, now time.Time) bool {
 		l.remove(el)
 		return false
 	}
+	// 移到尾部，保持最近使用顺序
+	l.remove(el)
+	l.list = append(l.list, el)
 	return true
 }
 
+// add 将 traceID 加入或移到缓存尾部，刷新过期时间。
+// 达到 maxSize 时先淘汰最旧条目。
 func (l *traceLRU) add(tid trace.TraceID, now time.Time) {
-	if _, ok := l.entries[tid]; ok {
+	if el, ok := l.entries[tid]; ok {
+		l.remove(el)
+		el.expiresAt = now.Add(l.ttl)
+		l.entries[tid] = el
+		l.list = append(l.list, el)
 		return
 	}
 
@@ -152,6 +163,7 @@ func (l *traceLRU) add(tid trace.TraceID, now time.Time) {
 	l.list = append(l.list, el)
 }
 
+// remove 从缓存中删除指定元素（过期清理时调用）。
 func (l *traceLRU) remove(el *lruElement) {
 	delete(l.entries, el.tid)
 
@@ -163,6 +175,7 @@ func (l *traceLRU) remove(el *lruElement) {
 	}
 }
 
+// evict 淘汰最旧（list 头部）元素，在达到 maxSize 时由 add 触发。
 func (l *traceLRU) evict() {
 	if len(l.list) == 0 {
 		return

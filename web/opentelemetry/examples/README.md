@@ -25,18 +25,16 @@ func main() {
     c.Telemetry.Disabled = true
 
     // 初始化自定义 tracing
-    cfg, err := opentelemetry.NewFactory().
-        WithServiceName(c.Telemetry.Name).
-        WithEndpoint(c.Telemetry.Endpoint).              // "http://arms-dc-xxx.aliyuncs.com:443"
-        WithHeaders(map[string]string{                    // ARMS 认证
-            "ARMS-USERNAME": c.Telemetry.Endpoint,
-            "ARMS-PASSWORD": c.Telemetry.Endpoint,
-        }).
-        WithNormalSampler(0.1).                           // 正常 span 10% 采样
-        Build()
-    if err != nil {
-        panic(err)
+    cfg := opentelemetry.NewConfig(
+        c.Telemetry.Name,
+        c.Telemetry.Endpoint,                             // "http://arms-dc-xxx.aliyuncs.com:443"
+        c.Telemetry.OtlpHttpPath,                         // "/v1/traces"
+    )
+    cfg.Headers = map[string]string{
+        "ARMS-USERNAME": c.Telemetry.Endpoint,
+        "ARMS-PASSWORD": c.Telemetry.Endpoint,
     }
+    cfg.NormalSampler = 0.1                               // 正常 span 10% 采样
 
     shutdown, err := opentelemetry.InitTracing(cfg)
     if err != nil {
@@ -106,13 +104,11 @@ func CreateOrderHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 c.Telemetry.Disabled = true
 c.Telemetry.Sampler = 1.0
 
-cfg, err := opentelemetry.NewFactory().
-    WithServiceName(c.Telemetry.Name).
-    WithEndpoint(c.Telemetry.Endpoint).
-    Build()
-if err != nil {
-    panic(err)
-}
+cfg := opentelemetry.NewConfig(
+    c.Telemetry.Name,
+    c.Telemetry.Endpoint,
+    c.Telemetry.OtlpHttpPath,
+)
 
 shutdown, err := opentelemetry.InitTracing(cfg)
 if err != nil {
@@ -146,7 +142,7 @@ func (l *CreateOrderLogic) CreateOrder(in *pb.CreateOrderReq) (*pb.CreateOrderRe
 |---|---|---|
 | `ServiceName` | **必填** | 服务名，写入 span resource |
 | `Endpoint` | **必填** | OTLP collector 地址（ARMS） |
-| `URLPath` | `/v1/traces` | OTLP HTTP 路径 |
+| `URLPath` | **必填** | OTLP HTTP 路径 |
 | `NormalSampler` | 0.1 | 正常 span 采样率 [0,1] |
 | `BatchTimeout` | 5 | 批量导出最大等待秒数 |
 | `MaxExportBatchSize`` | 512 | 单次批量最大 span 数 |

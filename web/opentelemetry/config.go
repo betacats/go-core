@@ -1,21 +1,35 @@
 package opentelemetry
 
-import "errors"
+// NewConfig 创建 Config，注入全部默认值。
+func NewConfig(serviceName, endpoint, urlPath string) Config {
+	return Config{
+		ServiceName:        serviceName,
+		Endpoint:           endpoint,
+		URLPath:            urlPath,
+		NormalSampler:      0.1,
+		LRUMaxSize:         10000,
+		ErrorTTLSeconds:    30,
+		BatchTimeout:       5,
+		MaxExportBatchSize: 512,
+		Batcher:            "otlphttp",
+	}
+}
 
-// Config 是 web/opentelemetry 的完整配置，通过 Factory.Build() 构造。
 type Config struct {
 	// ServiceName 服务名称，会作为资源属性写入 span。
 	ServiceName string
 	// Endpoint OTLP collector 地址，例如 "http://localhost:4318"。
 	Endpoint string
-	// URLPath OTLP traces 路径，默认 "/v1/traces"。
+	// URLPath OTLP traces 路径，例如 "/v1/traces"。
 	URLPath string
+
 	// Insecure 为 true 时跳过 TLS 证书校验。
 	Insecure bool
 	// Headers 附加到每个 OTLP 请求的 HTTP 头部，可用于 ARMS 认证。
 	Headers map[string]string
 	// NormalSampler 正常 span 采样率 [0,1]，默认 0.1。
 	NormalSampler float64
+
 	// LRUMaxSize 错误 traceID 缓存最大条目数，默认 10000。
 	LRUMaxSize int
 	// ErrorTTLSeconds 错误 traceID 缓存保留秒数，默认 30。
@@ -28,46 +42,20 @@ type Config struct {
 	Batcher string
 }
 
-// Factory 是 Config 的构建器，在构造时补齐默认值。
-type Factory struct {
-	// config 正在构建的配置对象。
-	config Config
-}
+// WithNormalSampler 设置正常 span 采样率 [0,1]。
+func (c *Config) WithNormalSampler(v float64) *Config { c.NormalSampler = v; return c }
 
-// NewFactory 创建一个已注入默认值的 Factory。
-func NewFactory() *Factory {
-	return &Factory{
-		config: Config{
-			URLPath:            "/v1/traces",
-			NormalSampler:      0.1,
-			LRUMaxSize:         10000,
-			ErrorTTLSeconds:    30,
-			BatchTimeout:       5,
-			MaxExportBatchSize: 512,
-			Batcher:            "batch",
-		},
-	}
-}
+// WithLRUMaxSize 设置错误 traceID 缓存最大条目数。
+func (c *Config) WithLRUMaxSize(v int) *Config { c.LRUMaxSize = v; return c }
 
-func (f *Factory) WithServiceName(v string) *Factory        { f.config.ServiceName = v; return f }
-func (f *Factory) WithEndpoint(v string) *Factory           { f.config.Endpoint = v; return f }
-func (f *Factory) WithURLPath(v string) *Factory            { f.config.URLPath = v; return f }
-func (f *Factory) WithInsecure(v bool) *Factory             { f.config.Insecure = v; return f }
-func (f *Factory) WithHeaders(v map[string]string) *Factory { f.config.Headers = v; return f }
-func (f *Factory) WithNormalSampler(v float64) *Factory     { f.config.NormalSampler = v; return f }
-func (f *Factory) WithLRUMaxSize(v int) *Factory            { f.config.LRUMaxSize = v; return f }
-func (f *Factory) WithErrorTTLSeconds(v int) *Factory       { f.config.ErrorTTLSeconds = v; return f }
-func (f *Factory) WithBatchTimeout(v int) *Factory          { f.config.BatchTimeout = v; return f }
-func (f *Factory) WithMaxExportBatchSize(v int) *Factory    { f.config.MaxExportBatchSize = v; return f }
-func (f *Factory) WithBatcher(v string) *Factory            { f.config.Batcher = v; return f }
+// WithErrorTTLSeconds 设置错误 traceID 缓存保留秒数。
+func (c *Config) WithErrorTTLSeconds(v int) *Config { c.ErrorTTLSeconds = v; return c }
 
-// Build 返回补齐默认值后的 Config，并校验必填字段。
-func (f *Factory) Build() (Config, error) {
-	if f.config.ServiceName == "" {
-		return Config{}, errors.New("opentelemetry: ServiceName is required")
-	}
-	if f.config.Endpoint == "" {
-		return Config{}, errors.New("opentelemetry: Endpoint is required")
-	}
-	return f.config, nil
-}
+// WithBatchTimeout 设置批量导出最大等待秒数。
+func (c *Config) WithBatchTimeout(v int) *Config { c.BatchTimeout = v; return c }
+
+// WithMaxExportBatchSize 设置单次批量导出最大 span 数。
+func (c *Config) WithMaxExportBatchSize(v int) *Config { c.MaxExportBatchSize = v; return c }
+
+// WithBatcher 设置 span 处理器类型（当前保留供后续扩展）。
+func (c *Config) WithBatcher(v string) *Config { c.Batcher = v; return c }

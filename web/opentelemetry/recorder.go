@@ -112,7 +112,7 @@ func RecoverMiddleware(next http.Handler) http.Handler {
 				resp := builder.BuildError(r.Context(), err)
 
 				w.Header().Set("Content-Type", "application/json; charset=utf-8")
-				w.WriteHeader(http.StatusInternalServerError)
+				w.WriteHeader(http.StatusOK)
 				_ = json.NewEncoder(w).Encode(resp)
 			}
 		}()

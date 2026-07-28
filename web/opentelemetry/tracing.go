@@ -30,7 +30,7 @@ func InitTracing(cfg Config) (shutdown func(context.Context) error, err error) {
 
 	res, err := resource.New(context.Background(),
 		resource.WithAttributes(
-			semconv.ServiceNameKey.String(cfg.ServiceName),
+			semconv.ServiceNameKey.String(cfg.GetServiceName()),
 		),
 	)
 	if err != nil {
@@ -50,11 +50,10 @@ func InitTracing(cfg Config) (shutdown func(context.Context) error, err error) {
 	return globalShutdown, nil
 }
 
-// newSpanProcessor 根据 cfg.Batcher 创建对应的 SpanProcessor。
 func newSpanProcessor(cfg Config, exp sdktrace.SpanExporter) sdktrace.SpanProcessor {
 	return sdktrace.NewBatchSpanProcessor(exp,
-		sdktrace.WithBatchTimeout(time.Duration(cfg.BatchTimeout)*time.Second),
-		sdktrace.WithMaxExportBatchSize(cfg.MaxExportBatchSize),
+		sdktrace.WithBatchTimeout(time.Duration(cfg.GetBatchTimeout())*time.Second),
+		sdktrace.WithMaxExportBatchSize(cfg.GetMaxExportBatchSize()),
 	)
 }
 
@@ -63,14 +62,14 @@ func newOTLPExporter(cfg Config) (*otlptrace.Exporter, error) {
 	ctx := context.Background()
 
 	opts := []otlptracehttp.Option{
-		otlptracehttp.WithEndpoint(cfg.Endpoint),
-		otlptracehttp.WithURLPath(cfg.URLPath),
+		otlptracehttp.WithEndpoint(cfg.GetEndpoint()),
+		otlptracehttp.WithURLPath(cfg.GetURLPath()),
 	}
-	if cfg.Insecure {
+	if cfg.GetInsecure() {
 		opts = append(opts, otlptracehttp.WithInsecure())
 	}
-	if len(cfg.Headers) > 0 {
-		opts = append(opts, otlptracehttp.WithHeaders(cfg.Headers))
+	if len(cfg.GetHeaders()) > 0 {
+		opts = append(opts, otlptracehttp.WithHeaders(cfg.GetHeaders()))
 	}
 
 	client := otlptracehttp.NewClient(opts...)

@@ -33,7 +33,7 @@ func newErrorAwareExporter(inner sdktrace.SpanExporter, cfg Config) *errorAwareE
 	return &errorAwareExporter{
 		inner: inner,
 		cfg:   cfg,
-		lru:   newTraceLRU(cfg.LRUMaxSize, cfg.ErrorTTLSeconds),
+		lru:   newTraceLRU(cfg.GetLRUMaxSize(), cfg.GetErrorTTLSeconds()),
 	}
 }
 
@@ -77,7 +77,7 @@ func (e *errorAwareExporter) ExportSpans(ctx context.Context, spans []sdktrace.R
 		tid := s.SpanContext().TraceID()
 		if _, ok := infected[tid]; ok {
 			kept = append(kept, s)
-		} else if sample(e.cfg.NormalSampler) {
+		} else if sample(e.cfg.GetNormalSampler()) {
 			kept = append(kept, s)
 		}
 	}

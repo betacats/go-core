@@ -4,61 +4,82 @@ import (
 	"testing"
 )
 
-// TestConfig_Defaults 验证 NewConfig 默认值。
+// TestConfig_Defaults 验证 getter 默认值。
 func TestConfig_Defaults(t *testing.T) {
-	cfg := NewConfig("test-svc", "http://localhost:4318", "/v1/traces")
+	cfg := Config{
+		ServiceName: "test-svc",
+		Endpoint:    "http://localhost:4318",
+		URLPath:     "/v1/traces",
+	}
 
-	if cfg.ServiceName != "test-svc" {
-		t.Fatalf("expected ServiceName test-svc, got %s", cfg.ServiceName)
+	if cfg.GetNormalSampler() != 0.1 {
+		t.Fatalf("expected default NormalSampler 0.1, got %f", cfg.GetNormalSampler())
 	}
-	if cfg.Endpoint != "http://localhost:4318" {
-		t.Fatalf("expected Endpoint http://localhost:4318, got %s", cfg.Endpoint)
+	if cfg.GetLRUMaxSize() != 10000 {
+		t.Fatalf("expected default LRUMaxSize 10000, got %d", cfg.GetLRUMaxSize())
 	}
-	if cfg.URLPath != "/v1/traces" {
-		t.Fatalf("expected URLPath /v1/traces, got %s", cfg.URLPath)
+	if cfg.GetErrorTTLSeconds() != 30 {
+		t.Fatalf("expected default ErrorTTLSeconds 30, got %d", cfg.GetErrorTTLSeconds())
 	}
-	if cfg.NormalSampler != 0.1 {
-		t.Fatalf("expected default NormalSampler 0.1, got %f", cfg.NormalSampler)
+	if cfg.GetBatchTimeout() != 5 {
+		t.Fatalf("expected default BatchTimeout 5, got %d", cfg.GetBatchTimeout())
 	}
-	if cfg.LRUMaxSize != 10000 {
-		t.Fatalf("expected default LRUMaxSize 10000, got %d", cfg.LRUMaxSize)
+	if cfg.GetMaxExportBatchSize() != 512 {
+		t.Fatalf("expected default MaxExportBatchSize 512, got %d", cfg.GetMaxExportBatchSize())
 	}
-	if cfg.ErrorTTLSeconds != 30 {
-		t.Fatalf("expected default ErrorTTLSeconds 30, got %d", cfg.ErrorTTLSeconds)
+	if cfg.GetBatcher() != "batch" {
+		t.Fatalf("expected default Batcher batch, got %s", cfg.GetBatcher())
 	}
-	if cfg.BatchTimeout != 5 {
-		t.Fatalf("expected default BatchTimeout 5, got %d", cfg.BatchTimeout)
-	}
-	if cfg.MaxExportBatchSize != 512 {
-		t.Fatalf("expected default MaxExportBatchSize 512, got %d", cfg.MaxExportBatchSize)
-	}
-	if cfg.Batcher != "batch" {
-		t.Fatalf("expected default Batcher batch, got %s", cfg.Batcher)
+	if cfg.GetURLPath() != "/v1/traces" {
+		t.Fatalf("expected URLPath /v1/traces, got %s", cfg.GetURLPath())
 	}
 }
 
-// TestConfig_FieldOverride 验证属性覆盖后默认值不被影响。
+// TestConfig_FieldOverride 验证属性覆盖后 getter 返回自定义值。
 func TestConfig_FieldOverride(t *testing.T) {
-	cfg := NewConfig("test-svc", "http://localhost:4318", "/custom/traces")
-	cfg.NormalSampler = 0.5
-	cfg.Insecure = true
-	cfg.Headers = map[string]string{"auth": "token"}
+	cfg := Config{
+		ServiceName:   "test-svc",
+		Endpoint:      "http://localhost:4318",
+		URLPath:       "/custom/traces",
+		NormalSampler: 0.5,
+		Insecure:      true,
+		Headers:       map[string]string{"auth": "token"},
+	}
 
-	if cfg.URLPath != "/custom/traces" {
-		t.Fatalf("expected URLPath /custom/traces, got %s", cfg.URLPath)
+	if cfg.GetURLPath() != "/custom/traces" {
+		t.Fatalf("expected URLPath /custom/traces, got %s", cfg.GetURLPath())
 	}
-	if cfg.NormalSampler != 0.5 {
-		t.Fatalf("expected NormalSampler 0.5, got %f", cfg.NormalSampler)
+	if cfg.GetNormalSampler() != 0.5 {
+		t.Fatalf("expected NormalSampler 0.5, got %f", cfg.GetNormalSampler())
 	}
-	if !cfg.Insecure {
+	if !cfg.GetInsecure() {
 		t.Fatal("expected Insecure=true")
 	}
-	if cfg.Headers["auth"] != "token" {
-		t.Fatalf("expected Headers[auth]=token, got %s", cfg.Headers["auth"])
+	if cfg.GetHeaders()["auth"] != "token" {
+		t.Fatalf("expected Headers[auth]=token, got %s", cfg.GetHeaders()["auth"])
 	}
-	// 未覆盖的字段保持默认值
-	if cfg.LRUMaxSize != 10000 {
-		t.Fatalf("expected LRUMaxSize 10000, got %d", cfg.LRUMaxSize)
+	// 未覆盖的字段 getter 返回默认值
+	if cfg.GetLRUMaxSize() != 10000 {
+		t.Fatalf("expected LRUMaxSize 10000, got %d", cfg.GetLRUMaxSize())
+	}
+}
+
+// TestConfig_EmptyDefaults 验证零值 getter 返回默认值。
+func TestConfig_EmptyDefaults(t *testing.T) {
+	cfg := Config{
+		ServiceName: "test-svc",
+		Endpoint:    "http://localhost:4318",
+		URLPath:     "",
+	}
+
+	if cfg.GetURLPath() != "/v1/traces" {
+		t.Fatalf("expected default URLPath /v1/traces, got %s", cfg.GetURLPath())
+	}
+	if cfg.GetNormalSampler() != 0.1 {
+		t.Fatalf("expected default NormalSampler 0.1, got %f", cfg.GetNormalSampler())
+	}
+	if cfg.GetBatcher() != "batch" {
+		t.Fatalf("expected default Batcher batch, got %s", cfg.GetBatcher())
 	}
 }
 

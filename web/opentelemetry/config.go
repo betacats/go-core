@@ -1,20 +1,5 @@
 package opentelemetry
 
-// NewConfig 创建 Config，注入全部默认值。
-func NewConfig(serviceName, endpoint, urlPath string) Config {
-	return Config{
-		ServiceName:        serviceName,
-		Endpoint:           endpoint,
-		URLPath:            urlPath,
-		NormalSampler:      0.1,
-		LRUMaxSize:         10000,
-		ErrorTTLSeconds:    30,
-		BatchTimeout:       5,
-		MaxExportBatchSize: 512,
-		Batcher:            "batch",
-	}
-}
-
 type Config struct {
 	// ServiceName 服务名称，会作为资源属性写入 span。
 	ServiceName string
@@ -42,20 +27,43 @@ type Config struct {
 	Batcher string
 }
 
-// WithNormalSampler 设置正常 span 采样率 [0,1]。
-func (c *Config) WithNormalSampler(v float64) *Config { c.NormalSampler = v; return c }
+func (c *Config) GetServiceName() string          { return c.ServiceName }
+func (c *Config) GetEndpoint() string             { return c.Endpoint }
 
-// WithLRUMaxSize 设置错误 traceID 缓存最大条目数。
-func (c *Config) WithLRUMaxSize(v int) *Config { c.LRUMaxSize = v; return c }
+func (c *Config) GetURLPath() string {
+	if c.URLPath != "" { return c.URLPath }
+	return "/v1/traces"
+}
 
-// WithErrorTTLSeconds 设置错误 traceID 缓存保留秒数。
-func (c *Config) WithErrorTTLSeconds(v int) *Config { c.ErrorTTLSeconds = v; return c }
+func (c *Config) GetInsecure() bool             { return c.Insecure }
+func (c *Config) GetHeaders() map[string]string { return c.Headers }
 
-// WithBatchTimeout 设置批量导出最大等待秒数。
-func (c *Config) WithBatchTimeout(v int) *Config { c.BatchTimeout = v; return c }
+func (c *Config) GetNormalSampler() float64 {
+	if c.NormalSampler <= 0 || c.NormalSampler > 1 { return 0.1 }
+	return c.NormalSampler
+}
 
-// WithMaxExportBatchSize 设置单次批量导出最大 span 数。
-func (c *Config) WithMaxExportBatchSize(v int) *Config { c.MaxExportBatchSize = v; return c }
+func (c *Config) GetLRUMaxSize() int {
+	if c.LRUMaxSize <= 0 { return 10000 }
+	return c.LRUMaxSize
+}
 
-// WithBatcher 设置 span 处理器类型（当前保留供后续扩展）。
-func (c *Config) WithBatcher(v string) *Config { c.Batcher = v; return c }
+func (c *Config) GetErrorTTLSeconds() int {
+	if c.ErrorTTLSeconds <= 0 { return 30 }
+	return c.ErrorTTLSeconds
+}
+
+func (c *Config) GetBatchTimeout() int {
+	if c.BatchTimeout <= 0 { return 5 }
+	return c.BatchTimeout
+}
+
+func (c *Config) GetMaxExportBatchSize() int {
+	if c.MaxExportBatchSize <= 0 { return 512 }
+	return c.MaxExportBatchSize
+}
+
+func (c *Config) GetBatcher() string {
+	if c.Batcher == "" { return "batch" }
+	return c.Batcher
+}

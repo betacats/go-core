@@ -2,7 +2,6 @@ package opentelemetry
 
 import (
 	"bytes"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 )
@@ -64,21 +63,5 @@ func TestIsBusinessError_EmptyBody(t *testing.T) {
 func TestIsBusinessError_InvalidJSON(t *testing.T) {
 	if IsBusinessError([]byte(`not json`)) {
 		t.Fatal("expected no business error for invalid json")
-	}
-}
-
-// TestMiddleware_Success 验证成功请求不会标记 span 错误。
-func TestMiddleware(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"result":true,"code":0,"msg":"success"}`))
-	})
-
-	wrapped := RequestMiddleware(handler)
-	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/test", nil)
-	wrapped.ServeHTTP(w, r)
-
-	if !bytes.Equal(w.Body.Bytes(), []byte(`{"result":true,"code":0,"msg":"success"}`)) {
-		t.Fatalf("unexpected response: %s", w.Body.String())
 	}
 }

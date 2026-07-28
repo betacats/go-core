@@ -73,7 +73,7 @@ func TestMiddleware(t *testing.T) {
 		w.Write([]byte(`{"result":true,"code":0,"msg":"success"}`))
 	})
 
-	wrapped := Middleware(handler)
+	wrapped := RequestMiddleware(handler)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
 	wrapped.ServeHTTP(w, r)

@@ -59,10 +59,10 @@ func IsBusinessError(body []byte) bool {
 	return false
 }
 
-// Middleware 返回一个 go-zero 兼容的 HTTP 中间件。
+// RequestMiddleware 返回一个 go-zero 兼容的 HTTP 中间件。
 // 在 handler 执行后检查响应体，如果检测到业务错误（result=false 或 code!=0），
 // 将当前 span 标记为 codes.Error，确保整条 trace 被全量保留。
-func Middleware(next http.HandlerFunc) http.HandlerFunc {
+func RequestMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rec := &BodyRecorder{ResponseWriter: w}
 		next(rec, r)

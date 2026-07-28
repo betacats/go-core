@@ -44,7 +44,7 @@ func Example() {
 		})
 	})
 
-	wrapped := opentelemetry.Middleware(handler)
+	wrapped := opentelemetry.RequestMiddleware(handler)
 
 	reqOK := httptest.NewRequest(http.MethodGet, "/health", nil)
 	recOK := httptest.NewRecorder()
@@ -72,7 +72,7 @@ func ExampleMiddleware() {
 		})
 	}
 
-	wrapped := opentelemetry.Middleware(http.HandlerFunc(handler))
+	wrapped := opentelemetry.RequestMiddleware(http.HandlerFunc(handler))
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	rec := httptest.NewRecorder()
 	wrapped.ServeHTTP(rec, req)

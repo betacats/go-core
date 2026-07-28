@@ -75,9 +75,7 @@ func Middleware(next http.Handler) http.Handler {
 		next.ServeHTTP(rec, r)
 
 		if IsBusinessError(rec.Body()) {
-			if span := trace.SpanFromContext(r.Context()); span.IsRecording() {
-				span.SetStatus(codes.Error, "business error")
-			}
+			trace.SpanFromContext(r.Context()).SetStatus(codes.Error, "business error")
 		}
 	})
 }

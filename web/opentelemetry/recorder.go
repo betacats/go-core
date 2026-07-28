@@ -59,38 +59,42 @@ func IsBusinessError(body []byte) bool {
 	return false
 }
 
-// Middleware 返回一个标准 HTTP 中间件，在 handler 执行后检查响应体。
-//
-// 如果响应体是 go-core 统一格式的业务错误（result=false 或 code!=0），
-// 会将当前 span 标记为 codes.Error，确保整条 trace 被全量保留。
-//
-// 在 go-zero REST 服务中的使用方式：
-//
-//	server.Use(func(next http.HandlerFunc) http.HandlerFunc {
-//		return opentelemetry.Middleware(next).ServeHTTP
-//	})
-func Middleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// Middleware 返回一个 go-zero 兼容的 HTTP 中间件。
+// 在 handler 执行后检查响应体，如果检测到业务错误（result=false 或 code!=0），
+// 将当前 span 标记为 codes.Error，确保整条 trace 被全量保留。
+func Middleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		rec := &BodyRecorder{ResponseWriter: w}
-		next.ServeHTTP(rec, r)
+		next(rec, r)
 
 		if IsBusinessError(rec.Body()) {
 			trace.SpanFromContext(r.Context()).SetStatus(codes.Error, "business error")
 		}
-	})
+	}
+}
+
+// DeadlineExceededMiddleware 检测请求是否超时，超时时标记 span 为 codes.Error。
+func DeadlineExceededMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		next(w, r)
+		if r.Context().Err() == context.DeadlineExceeded {
+			span := trace.SpanFromContext(r.Context())
+			span.SetStatus(codes.Error, "deadline exceeded")
+		}
+	}
 }
 
 // RecoverMiddleware 返回一个 panic 恢复中间件，捕获 handler 中的 panic。
 //
 // 它会将当前 span 标记为 codes.Error，确保整条 trace 被全量保留，
-// 并向客户端返回统一错误响应。
+// 并向客户端返回统一错误响应（含 traceId）。
 //
 // 在 go-zero REST 服务中应注册为第一个中间件：
 //
-//	server.Use(func(next http.HandlerFunc) http.HandlerFunc {
-//	    return opentelemetry.RecoverMiddleware(next).ServeHTTP
-//	})
-func RecoverMiddleware(next http.Handler) http.Handler {
+//	server.Use(opentelemetry.RecoverMiddleware)
+//	server.Use(middlewareWithRedisToken(ctx))
+//	server.Use(opentelemetry.Middleware)
+func RecoverMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	builder := responsex.New(responsex.Options{
 		DefaultErrorCode: errorx.Unknown.Value(),
 		DefaultErrorMsg:  errorx.Unknown.Msg(),
@@ -104,7 +108,7 @@ func RecoverMiddleware(next http.Handler) http.Handler {
 		},
 	})
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if v := recover(); v != nil {
 				if span := trace.SpanFromContext(r.Context()); span.IsRecording() {
@@ -123,6 +127,6 @@ func RecoverMiddleware(next http.Handler) http.Handler {
 				_ = json.NewEncoder(w).Encode(resp)
 			}
 		}()
-		next.ServeHTTP(w, r)
-	})
+		next(w, r)
+	}
 }

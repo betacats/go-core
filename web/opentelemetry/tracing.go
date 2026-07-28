@@ -65,7 +65,7 @@ func newOTLPExporter(cfg Config) (*otlptrace.Exporter, error) {
 		otlptracehttp.WithEndpoint(cfg.GetEndpoint()),
 		otlptracehttp.WithURLPath(cfg.GetURLPath()),
 	}
-	if cfg.GetInsecure() {
+	if !cfg.GetSecure() {
 		opts = append(opts, otlptracehttp.WithInsecure())
 	}
 	if len(cfg.GetHeaders()) > 0 {

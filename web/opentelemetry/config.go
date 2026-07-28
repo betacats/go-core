@@ -8,8 +8,8 @@ type Config struct {
 	// URLPath OTLP traces 路径，例如 "/v1/traces"。
 	URLPath string
 
-	// Insecure 为 true 时跳过 TLS 证书校验。
-	Insecure bool
+	// Secure 为 true 时开启 TLS 证书校验。
+	Secure bool
 	// Headers 附加到每个 OTLP 请求的 HTTP 头部，可用于 ARMS 认证。
 	Headers map[string]string
 	// NormalSampler 正常 span 采样率 [0,1]，默认 0.1。
@@ -27,43 +27,57 @@ type Config struct {
 	Batcher string
 }
 
-func (c *Config) GetServiceName() string          { return c.ServiceName }
-func (c *Config) GetEndpoint() string             { return c.Endpoint }
+func (c *Config) GetServiceName() string { return c.ServiceName }
+func (c *Config) GetEndpoint() string    { return c.Endpoint }
 
 func (c *Config) GetURLPath() string {
-	if c.URLPath != "" { return c.URLPath }
+	if c.URLPath != "" {
+		return c.URLPath
+	}
 	return "/v1/traces"
 }
 
-func (c *Config) GetInsecure() bool             { return c.Insecure }
+func (c *Config) GetSecure() bool               { return c.Secure }
 func (c *Config) GetHeaders() map[string]string { return c.Headers }
 
 func (c *Config) GetNormalSampler() float64 {
-	if c.NormalSampler <= 0 || c.NormalSampler > 1 { return 0.1 }
+	if c.NormalSampler <= 0 || c.NormalSampler > 1 {
+		return 0.1
+	}
 	return c.NormalSampler
 }
 
 func (c *Config) GetLRUMaxSize() int {
-	if c.LRUMaxSize <= 0 { return 10000 }
+	if c.LRUMaxSize <= 0 {
+		return 10000
+	}
 	return c.LRUMaxSize
 }
 
 func (c *Config) GetErrorTTLSeconds() int {
-	if c.ErrorTTLSeconds <= 0 { return 30 }
+	if c.ErrorTTLSeconds <= 0 {
+		return 30
+	}
 	return c.ErrorTTLSeconds
 }
 
 func (c *Config) GetBatchTimeout() int {
-	if c.BatchTimeout <= 0 { return 5 }
+	if c.BatchTimeout <= 0 {
+		return 5
+	}
 	return c.BatchTimeout
 }
 
 func (c *Config) GetMaxExportBatchSize() int {
-	if c.MaxExportBatchSize <= 0 { return 512 }
+	if c.MaxExportBatchSize <= 0 {
+		return 512
+	}
 	return c.MaxExportBatchSize
 }
 
 func (c *Config) GetBatcher() string {
-	if c.Batcher == "" { return "batch" }
+	if c.Batcher == "" {
+		return "batch"
+	}
 	return c.Batcher
 }

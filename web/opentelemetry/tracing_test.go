@@ -42,7 +42,7 @@ func TestConfig_FieldOverride(t *testing.T) {
 		Endpoint:      "http://localhost:4318",
 		URLPath:       "/custom/traces",
 		NormalSampler: 0.5,
-		Insecure:      true,
+		Secure:        true,
 		Headers:       map[string]string{"auth": "token"},
 	}
 

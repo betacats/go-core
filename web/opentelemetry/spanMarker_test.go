@@ -9,7 +9,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-func TestMarkSpanError(t *testing.T) {
+func TestSpanMarkError(t *testing.T) {
 	inner := &spanSliceExporter{}
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
@@ -19,8 +19,8 @@ func TestMarkSpanError(t *testing.T) {
 	ctx := context.Background()
 
 	ctx, span := tracer.Start(ctx, "test-span")
-	resp := responsex.Response{Result: responsex.ResultFailure, Code: 7, Msg: "error"}
-	MarkSpanError(ctx, resp)
+	sm := &SpanMarker{}
+	sm.SpanMarkError(ctx)
 	span.End()
 
 	if len(inner.spans) != 1 {
@@ -31,7 +31,7 @@ func TestMarkSpanError(t *testing.T) {
 	}
 }
 
-func TestMarkSpanOk(t *testing.T) {
+func TestSpanMarkOk(t *testing.T) {
 	inner := &spanSliceExporter{}
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
@@ -41,8 +41,8 @@ func TestMarkSpanOk(t *testing.T) {
 	ctx := context.Background()
 
 	ctx, span := tracer.Start(ctx, "test-span")
-	resp := responsex.Response{Result: responsex.ResultSuccess, Code: 0, Msg: "success"}
-	MarkSpanOk(ctx, resp)
+	sm := &SpanMarker{resp: responsex.Response{Result: responsex.ResultSuccess, Code: 0, Msg: "success"}}
+	sm.SpanMarkOk(ctx, sm.resp)
 	span.End()
 
 	if len(inner.spans) != 1 {

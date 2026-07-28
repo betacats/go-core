@@ -2,16 +2,11 @@ package opentelemetry
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-
-	"github.com/betacats/go-core/web/errorx"
-	"github.com/betacats/go-core/web/responsex"
 )
 
 // BodyRecorder 包装 http.ResponseWriter，拦截写入的响应体。
@@ -62,71 +57,8 @@ func IsBusinessError(body []byte) bool {
 // RequestMiddleware 返回一个 go-zero 兼容的 HTTP 中间件。
 // 在 handler 执行后检查响应体，如果检测到业务错误（result=false 或 code!=0），
 // 将当前 span 标记为 codes.Error，确保整条 trace 被全量保留。
-func RequestMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		rec := &BodyRecorder{ResponseWriter: w}
-		next(rec, r)
-
-		if IsBusinessError(rec.Body()) {
-			trace.SpanFromContext(r.Context()).SetStatus(codes.Error, "business error")
-		}
-	}
-}
-
-// DeadlineExceededMiddleware 检测请求是否超时，超时时标记 span 为 codes.Error。
-func DeadlineExceededMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		next(w, r)
-		if r.Context().Err() == context.DeadlineExceeded {
-			span := trace.SpanFromContext(r.Context())
-			span.SetStatus(codes.Error, "deadline exceeded")
-		}
-	}
-}
-
-// RecoverMiddleware 返回一个 panic 恢复中间件，捕获 handler 中的 panic。
-//
-// 它会将当前 span 标记为 codes.Error，确保整条 trace 被全量保留，
-// 并向客户端返回统一错误响应（含 traceId）。
-//
-// 在 go-zero REST 服务中应注册为第一个中间件：
-//
-//	server.Use(opentelemetry.RecoverMiddleware)
-//	server.Use(middlewareWithRedisToken(ctx))
-//	server.Use(opentelemetry.Middleware)
-func RecoverMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	builder := responsex.New(responsex.Options{
-		DefaultErrorCode: errorx.Unknown.Value(),
-		DefaultErrorMsg:  errorx.Unknown.Msg(),
-		TraceFieldMode:   responsex.TraceFieldModeTraceID,
-		TraceFieldExtractor: func(ctx context.Context) string {
-			span := trace.SpanFromContext(ctx)
-			if span.SpanContext().HasTraceID() {
-				return span.SpanContext().TraceID().String()
-			}
-			return ""
-		},
-	})
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if v := recover(); v != nil {
-				if span := trace.SpanFromContext(r.Context()); span.IsRecording() {
-					span.SetStatus(codes.Error, fmt.Sprintf("panic recovered: %v", v))
-				}
-
-				err := errorx.NewCodeMsgDataError(
-					errorx.Unknown.Value(),
-					"panic recovered: "+fmt.Sprint(v),
-					map[string]any{},
-				)
-				resp := builder.BuildError(r.Context(), err)
-
-				w.Header().Set("Content-Type", "application/json; charset=utf-8")
-				w.WriteHeader(http.StatusOK)
-				_ = json.NewEncoder(w).Encode(resp)
-			}
-		}()
-		next(w, r)
+func MarkSpan(rec *BodyRecorder, r *http.Request) {
+	if IsBusinessError(rec.Body()) {
+		trace.SpanFromContext(r.Context()).SetStatus(codes.Error, "business error")
 	}
 }

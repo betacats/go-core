@@ -21,8 +21,7 @@ func New(opts Options) *Builder {
 	if opts.EnableReport && opts.Reporter == nil {
 		opts.Reporter = NewSentryReporter()
 	}
-	if opts.EnableTrace && opts.TraceSpanMarker == nil {
-		opts.TraceSpanMarker = opentelemetry.NewTraceSpanMarker()
+	if opts.TraceSpanMarker == nil {
 	}
 	if opts.Decoder == nil {
 		opts.Decoder = ChainDecoders(
@@ -45,8 +44,11 @@ func (b *Builder) BuildOK(ctx context.Context, data any) Response {
 		Data:   normalizeData(data),
 	}
 	b.attachTraceField(ctx, &resp)
-	if b.opts.EnableTrace == true && b.opts.TraceSpanMarker != nil {
-		b.opts.TraceSpanMarker.TraceSpanMarkOk(ctx)
+	if b.opts.EnableTrace == true {
+		if b.opts.TraceSpanMarker != nil {
+			b.opts.TraceSpanMarker.TraceSpanMarkOk(ctx)
+		}
+		opentelemetry.SetSpanAttr(ctx, "resp", resp)
 	}
 	return resp
 }
@@ -74,9 +76,13 @@ func (b *Builder) BuildError(ctx context.Context, err error) Response {
 			Parsed:   parsed,
 		})
 	}
-	if b.opts.EnableTrace == true && b.opts.TraceSpanMarker != nil {
-		b.opts.TraceSpanMarker.TraceSpanMarkError(ctx)
+	if b.opts.EnableTrace == true {
+		if b.opts.TraceSpanMarker != nil {
+			b.opts.TraceSpanMarker.TraceSpanMarkError(ctx)
+		}
+		opentelemetry.SetSpanAttr(ctx, "resp", resp)
 	}
+
 	return resp
 }
 

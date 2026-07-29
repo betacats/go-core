@@ -69,9 +69,9 @@ type Reporter interface {
 
 // SpanMarker 用于在响应中打 span 标记。
 // go-core 的标记函数交给业务方自行注入。
-type SpanMarker interface {
-	SpanMarkOk(ctx context.Context)
-	SpanMarkError(ctx context.Context)
+type TraceSpanMarker interface {
+	TraceSpanMarkOk(ctx context.Context)
+	TraceSpanMarkError(ctx context.Context)
 }
 
 // ReporterFunc 是 Reporter 的函数式适配器。
@@ -128,7 +128,7 @@ type Options struct {
 	//
 
 	// SpanMarker 用于在响应中打 span 标记。
-	SpanMarker SpanMarker
+	TraceSpanMarker TraceSpanMarker
 	// EnableReport 控制是否开启错误上报。
 	EnableReport bool
 	// Reporter 是外部错误上报实现。

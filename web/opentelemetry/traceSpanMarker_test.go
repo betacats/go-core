@@ -19,8 +19,8 @@ func TestSpanMarkError(t *testing.T) {
 	ctx := context.Background()
 
 	ctx, span := tracer.Start(ctx, "test-span")
-	sm := &SpanMarker{}
-	sm.SpanMarkError(ctx)
+	sm := &TraceSpanMarker{}
+	sm.TraceSpanMarkError(ctx)
 	span.End()
 
 	if len(inner.spans) != 1 {
@@ -41,8 +41,8 @@ func TestSpanMarkOk(t *testing.T) {
 	ctx := context.Background()
 
 	ctx, span := tracer.Start(ctx, "test-span")
-	sm := &SpanMarker{resp: responsex.Response{Result: responsex.ResultSuccess, Code: 0, Msg: "success"}}
-	sm.SpanMarkOk(ctx, sm.resp)
+	sm := &TraceSpanMarker{resp: responsex.Response{Result: responsex.ResultSuccess, Code: 0, Msg: "success"}}
+	sm.TraceSpanMarkOk(ctx, sm.resp)
 	span.End()
 
 	if len(inner.spans) != 1 {

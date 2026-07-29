@@ -1,6 +1,8 @@
 package responsex
 
-import "context"
+import (
+	"context"
+)
 
 // Builder 用于构建统一成功/失败响应。
 // 这是整个 responsex 的核心对象。
@@ -16,6 +18,8 @@ func New(opts Options) *Builder {
 	opts = opts.withDefaults()
 	if opts.EnableReport && opts.Reporter == nil {
 		opts.Reporter = NewSentryReporter()
+	}
+	if opts.TraceSpanMarker == nil {
 	}
 	if opts.Decoder == nil {
 		opts.Decoder = ChainDecoders(
@@ -51,7 +55,7 @@ func (b *Builder) BuildError(ctx context.Context, err error) Response {
 		Result: parsed.Result,
 		Code:   parsed.Code,
 		Msg:    parsed.Msg,
-		Data:   parsed.Data,
+		Data:   b.opts.ErrorData(ctx, parsed),
 	}
 	b.attachTraceField(ctx, &resp)
 
@@ -64,7 +68,6 @@ func (b *Builder) BuildError(ctx context.Context, err error) Response {
 			Parsed:   parsed,
 		})
 	}
-
 	return resp
 }
 

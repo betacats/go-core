@@ -52,7 +52,7 @@ func TestConfig_FieldOverride(t *testing.T) {
 	if cfg.GetNormalSampler() != 0.5 {
 		t.Fatalf("expected NormalSampler 0.5, got %f", cfg.GetNormalSampler())
 	}
-	if !cfg.GetInsecure() {
+	if !cfg.GetSecure() {
 		t.Fatal("expected Insecure=true")
 	}
 	if cfg.GetHeaders()["auth"] != "token" {

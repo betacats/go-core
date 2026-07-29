@@ -2,6 +2,8 @@ package responsex
 
 import (
 	"context"
+
+	"github.com/betacats/go-core/web/opentelemetry"
 )
 
 // Builder 用于构建统一成功/失败响应。
@@ -19,7 +21,8 @@ func New(opts Options) *Builder {
 	if opts.EnableReport && opts.Reporter == nil {
 		opts.Reporter = NewSentryReporter()
 	}
-	if opts.TraceSpanMarker == nil {
+	if opts.EnableTrace && opts.TraceSpanMarker == nil {
+		opts.TraceSpanMarker = opentelemetry.NewTraceSpanMarker()
 	}
 	if opts.Decoder == nil {
 		opts.Decoder = ChainDecoders(
@@ -42,7 +45,7 @@ func (b *Builder) BuildOK(ctx context.Context, data any) Response {
 		Data:   normalizeData(data),
 	}
 	b.attachTraceField(ctx, &resp)
-	if b.opts.TraceSpanMarker != nil {
+	if b.opts.EnableTrace == true && b.opts.TraceSpanMarker != nil {
 		b.opts.TraceSpanMarker.TraceSpanMarkOk(ctx)
 	}
 	return resp
@@ -71,7 +74,7 @@ func (b *Builder) BuildError(ctx context.Context, err error) Response {
 			Parsed:   parsed,
 		})
 	}
-	if b.opts.TraceSpanMarker != nil {
+	if b.opts.EnableTrace == true && b.opts.TraceSpanMarker != nil {
 		b.opts.TraceSpanMarker.TraceSpanMarkError(ctx)
 	}
 	return resp

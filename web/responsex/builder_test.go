@@ -54,6 +54,7 @@ func TestBuildOK(t *testing.T) {
 	builder := New(Options{
 		SuccessCode:    0,
 		SuccessMsg:     "success",
+		EnableTrace:    true,
 		TraceFieldMode: TraceFieldModeTraceID,
 		TraceFieldExtractor: func(ctx context.Context) string {
 			v, _ := ctx.Value(traceKey{}).(string)
@@ -364,4 +365,3 @@ func TestBuildErrorShouldReportFalse(t *testing.T) {
 		t.Fatal("expected reporter not to be called when ShouldReport returns false")
 	}
 }
-

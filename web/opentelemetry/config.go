@@ -31,10 +31,7 @@ func (c *Config) GetServiceName() string { return c.ServiceName }
 func (c *Config) GetEndpoint() string    { return c.Endpoint }
 
 func (c *Config) GetURLPath() string {
-	if c.URLPath != "" {
-		return c.URLPath
-	}
-	return "/v1/traces"
+	return c.URLPath
 }
 
 func (c *Config) GetSecure() bool               { return c.Secure }
@@ -77,7 +74,7 @@ func (c *Config) GetMaxExportBatchSize() int {
 
 func (c *Config) GetBatcher() string {
 	if c.Batcher == "" {
-		return "batch"
+		return "otlphttp"
 	}
 	return c.Batcher
 }

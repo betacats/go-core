@@ -9,6 +9,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/betacats/go-core/web/errorx"
 )
 
 type traceKey struct{}
@@ -135,6 +137,7 @@ func TestResponseMarshalJSONWithSpanField(t *testing.T) {
 	builder := New(Options{
 		SuccessCode:    0,
 		SuccessMsg:     "success",
+		EnableTrace:    true,
 		TraceFieldMode: TraceFieldModeSpan,
 		TraceFieldExtractor: func(ctx context.Context) string {
 			v, _ := ctx.Value(traceKey{}).(string)
@@ -200,6 +203,7 @@ func TestBuildOKWithStdHTTP(t *testing.T) {
 	builder := New(Options{
 		SuccessCode:    0,
 		SuccessMsg:     "success",
+		EnableTrace:    true,
 		TraceFieldMode: TraceFieldModeSpan,
 		TraceFieldExtractor: func(ctx context.Context) string {
 			v, _ := ctx.Value(traceKey{}).(string)
@@ -316,13 +320,13 @@ func TestBuildErrorReport(t *testing.T) {
 
 	reported := false
 	builder := New(Options{
-		DefaultErrorCode: 500,
+		DefaultErrorCode: errorx.Unknown.Value(),
 		DefaultErrorMsg:  "系统异常",
 		EnableReport:     true,
 		Reporter: ReporterFunc(func(ctx context.Context, payload ReporterPayload) {
 			reported = true
-			if payload.Response.Code != 500 {
-				t.Fatalf("expected reported response code 500, got %d", payload.Response.Code)
+			if payload.Response.Code != errorx.Unknown.Value() {
+				t.Fatalf("expected reported response code %d, got %d", errorx.Unknown.Value(), payload.Response.Code)
 			}
 		}),
 	})

@@ -1,6 +1,11 @@
 package responsex
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+
+	"github.com/betacats/go-core/web/opentelemetry"
+)
 
 // Builder 用于构建统一成功/失败响应。
 // 这是整个 responsex 的核心对象。
@@ -16,6 +21,9 @@ func New(opts Options) *Builder {
 	opts = opts.withDefaults()
 	if opts.EnableReport && opts.Reporter == nil {
 		opts.Reporter = NewSentryReporter()
+	}
+	if opts.EnableTrace && opts.TraceSpanMarker == nil {
+		opts.TraceSpanMarker = opentelemetry.NewTraceSpanMarker()
 	}
 	if opts.Decoder == nil {
 		opts.Decoder = ChainDecoders(
@@ -38,6 +46,12 @@ func (b *Builder) BuildOK(ctx context.Context, data any) Response {
 		Data:   normalizeData(data),
 	}
 	b.attachTraceField(ctx, &resp)
+	if b.opts.EnableTrace {
+		if b.opts.TraceSpanMarker != nil {
+			b.opts.TraceSpanMarker.TraceSpanMarkOk(ctx)
+		}
+		opentelemetry.SetSpanAttr(ctx, "resp", toJSONString(resp))
+	}
 	return resp
 }
 
@@ -51,7 +65,7 @@ func (b *Builder) BuildError(ctx context.Context, err error) Response {
 		Result: parsed.Result,
 		Code:   parsed.Code,
 		Msg:    parsed.Msg,
-		Data:   parsed.Data,
+		Data:   b.opts.ErrorData(ctx, parsed),
 	}
 	b.attachTraceField(ctx, &resp)
 
@@ -63,6 +77,12 @@ func (b *Builder) BuildError(ctx context.Context, err error) Response {
 			Response: resp,
 			Parsed:   parsed,
 		})
+	}
+	if b.opts.EnableTrace {
+		if b.opts.TraceSpanMarker != nil {
+			b.opts.TraceSpanMarker.TraceSpanMarkError(ctx)
+		}
+		opentelemetry.SetSpanAttr(ctx, "resp", toJSONString(resp))
 	}
 
 	return resp
@@ -154,4 +174,12 @@ func normalizeData(data any) any {
 		return map[string]any{}
 	}
 	return data
+}
+
+func toJSONString(v any) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return ""
+	}
+	return string(b)
 }

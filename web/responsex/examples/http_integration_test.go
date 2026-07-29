@@ -54,7 +54,7 @@ func Example() {
 
 	fmt.Println(strings.TrimSpace(rec.Body.String()))
 	// Output:
-	// {"result":false,"code":7,"msg":"PERMISSION_DENIED","data":null,"traceId":"trace-123"}
+	// {"result":false,"code":7,"msg":"PERMISSION_DENIED","data":{},"traceId":"trace-123"}
 }
 
 func createOrder() error {

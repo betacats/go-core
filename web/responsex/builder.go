@@ -2,6 +2,7 @@ package responsex
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/betacats/go-core/web/opentelemetry"
 )
@@ -48,7 +49,7 @@ func (b *Builder) BuildOK(ctx context.Context, data any) Response {
 		if b.opts.TraceSpanMarker != nil {
 			b.opts.TraceSpanMarker.TraceSpanMarkOk(ctx)
 		}
-		opentelemetry.SetSpanAttr(ctx, "resp", resp)
+		opentelemetry.SetSpanAttr(ctx, "resp", toJSONString(resp))
 	}
 	return resp
 }
@@ -80,7 +81,7 @@ func (b *Builder) BuildError(ctx context.Context, err error) Response {
 		if b.opts.TraceSpanMarker != nil {
 			b.opts.TraceSpanMarker.TraceSpanMarkError(ctx)
 		}
-		opentelemetry.SetSpanAttr(ctx, "resp", resp)
+		opentelemetry.SetSpanAttr(ctx, "resp", toJSONString(resp))
 	}
 
 	return resp
@@ -172,4 +173,12 @@ func normalizeData(data any) any {
 		return map[string]any{}
 	}
 	return data
+}
+
+func toJSONString(v any) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return ""
+	}
+	return string(b)
 }

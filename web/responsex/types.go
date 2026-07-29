@@ -119,6 +119,9 @@ type Options struct {
 	// DefaultErrorMsg 是未命中任何错误解析器时的默认错误文案。
 	DefaultErrorMsg string
 
+	// EnableTrace 控制是否开启链路追踪字段输出。
+	// 开启后才会在响应中输出 traceId/span 字段，以及在错误上报中携带链路信息。
+	EnableTrace bool
 	// TraceFieldMode 控制响应中输出哪一种链路字段。
 	// 默认不输出；可选 traceId 或 span。
 	TraceFieldMode TraceFieldMode

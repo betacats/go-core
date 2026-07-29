@@ -124,7 +124,7 @@ func (b *Builder) parseError(ctx context.Context, err error) ParsedError {
 
 // attachTraceField 按配置为响应附加链路字段。
 func (b *Builder) attachTraceField(ctx context.Context, resp *Response) {
-	if resp == nil {
+	if resp == nil || !b.opts.EnableTrace {
 		return
 	}
 

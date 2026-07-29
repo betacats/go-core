@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/betacats/go-core/web/responsex"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
@@ -41,8 +40,8 @@ func TestSpanMarkOk(t *testing.T) {
 	ctx := context.Background()
 
 	ctx, span := tracer.Start(ctx, "test-span")
-	sm := &TraceSpanMarker{resp: responsex.Response{Result: responsex.ResultSuccess, Code: 0, Msg: "success"}}
-	sm.TraceSpanMarkOk(ctx, sm.resp)
+	sm := &TraceSpanMarker{}
+	sm.TraceSpanMarkOk(ctx)
 	span.End()
 
 	if len(inner.spans) != 1 {

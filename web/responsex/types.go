@@ -125,8 +125,6 @@ type Options struct {
 	// TraceFieldExtractor 用于从 ctx 中提取链路字段值。
 	TraceFieldExtractor TraceFieldExtractor
 
-	//
-
 	// SpanMarker 用于在响应中打 span 标记。
 	TraceSpanMarker TraceSpanMarker
 	// EnableReport 控制是否开启错误上报。

@@ -42,6 +42,9 @@ func (b *Builder) BuildOK(ctx context.Context, data any) Response {
 		Data:   normalizeData(data),
 	}
 	b.attachTraceField(ctx, &resp)
+	if b.opts.TraceSpanMarker != nil {
+		b.opts.TraceSpanMarker.TraceSpanMarkOk(ctx)
+	}
 	return resp
 }
 
@@ -67,6 +70,9 @@ func (b *Builder) BuildError(ctx context.Context, err error) Response {
 			Response: resp,
 			Parsed:   parsed,
 		})
+	}
+	if b.opts.TraceSpanMarker != nil {
+		b.opts.TraceSpanMarker.TraceSpanMarkError(ctx)
 	}
 	return resp
 }

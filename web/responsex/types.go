@@ -67,6 +67,13 @@ type Reporter interface {
 	Report(ctx context.Context, payload ReporterPayload)
 }
 
+// SpanMarker 用于在响应中打 span 标记。
+// go-core 的标记函数交给业务方自行注入。
+type SpanMarker interface {
+	SpanMarkOk(ctx context.Context)
+	SpanMarkError(ctx context.Context)
+}
+
 // ReporterFunc 是 Reporter 的函数式适配器。
 // 方便业务方直接注入函数。
 type ReporterFunc func(ctx context.Context, payload ReporterPayload)
@@ -118,6 +125,10 @@ type Options struct {
 	// TraceFieldExtractor 用于从 ctx 中提取链路字段值。
 	TraceFieldExtractor TraceFieldExtractor
 
+	//
+
+	// SpanMarker 用于在响应中打 span 标记。
+	SpanMarker SpanMarker
 	// EnableReport 控制是否开启错误上报。
 	EnableReport bool
 	// Reporter 是外部错误上报实现。

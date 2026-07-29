@@ -22,7 +22,8 @@ func New(opts Options) *Builder {
 	if opts.EnableReport && opts.Reporter == nil {
 		opts.Reporter = NewSentryReporter()
 	}
-	if opts.TraceSpanMarker == nil {
+	if opts.EnableTrace == true && opts.TraceSpanMarker == nil {
+		opts.TraceSpanMarker = opentelemetry.NewTraceSpanMarker()
 	}
 	if opts.Decoder == nil {
 		opts.Decoder = ChainDecoders(

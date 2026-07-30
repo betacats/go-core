@@ -35,14 +35,14 @@ func CreateClient(ctx context.Context, opt *RedisOption) (*rd.Client, error) {
 
 type RedisOption struct {
 	Addr           string
-	Username       string
+	Username       string `json:",optional"`
 	Password       string
 	DB             int
-	MinIdleConns   int // 最小空闲连接： 推荐值: 5-20 （说明: 预热连接池，减少首次请求延迟）
-	MaxRetries     int // 最大重试次数：1-2: 推荐值，避免雪崩
-	ConnectTimeout int // 连接超时时间 推荐值: 1000-5000 毫秒 (1-5秒)
-	ReadTimeout    int // 读超时时间 推荐值: 3000-10000 毫秒 (3-10秒)
-	WriteTimeout   int // 写超时时间 推荐值: 3000-10000 毫秒 (3-10秒)
-	PoolSize       int // 连接池大小 推荐值: 20-100 (CPU核心数 * 2 ~ * 4)
-	IdleTimeout    int // 空闲超时时间 推荐值: 60-300 秒
+	MinIdleConns   int `json:",default=10"`   // 最小空闲连接： 推荐值: 5-20 （说明: 预热连接池，减少首次请求延迟）
+	MaxRetries     int `json:",default=2"`    // 最大重试次数：1-2: 推荐值，避免雪崩
+	ConnectTimeout int `json:",default=2000"` // 连接超时时间 推荐值: 1000-5000 毫秒 (1-5秒)
+	ReadTimeout    int `json:",default=3000"` // 读超时时间 推荐值: 3000-10000 毫秒 (3-10秒)
+	WriteTimeout   int `json:",default=3000"` // 写超时时间 推荐值: 3000-10000 毫秒 (3-10秒)
+	PoolSize       int `json:",default=100"`  // 连接池大小 推荐值: 20-100 (CPU核心数 * 2 ~ * 4)
+	IdleTimeout    int `json:",default=60"`   // 空闲超时时间 推荐值: 60-300 秒
 }

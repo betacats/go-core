@@ -32,9 +32,9 @@ func CreateEngine(opt *DataBaseOption, config gorm.Config) (*gorm.DB, error) {
 }
 
 type DataBaseOption struct {
-	Dsn             string // 数据库连接字符串 格式: user:password@tcp(host:port)/dbname?charset=utf8mb4&parseTime=True&loc=Local
-	IdleConnections int    // 最大空闲连接数 推荐值: 10-50 (说明: 保持适量空闲连接，减少连接创建开销)
-	OpenConnections int    // 最大打开连接数 推荐值: 50-200 (说明: 根据并发量和数据库服务器配置调整，避免连接过多)
-	Timeout         int    // 连接超时时间 推荐值: 5000-10000 毫秒 (5-10秒)
-	Lifetime        int    // 连接最大生命周期 推荐值: 3600-7200 秒 (1-2小时，说明: 定期回收连接，避免长期使用导致的问题)
+	Dsn             string `json:",optional"`
+	IdleConnections int    `json:",default=10"`   // 最大空闲连接数 推荐值: 10-50 (说明: 保持适量空闲连接，减少连接创建开销)
+	OpenConnections int    `json:",default=100"`  // 最大打开连接数 推荐值: 50-200 (说明: 根据并发量和数据库服务器配置调整，避免连接过多)
+	Timeout         int    `json:",default=5000"` // 连接超时时间 推荐值: 5000-10000 毫秒 (5-10秒)
+	Lifetime        int    `json:",default=3600"` // 连接最大生命周期 推荐值: 3600-7200 秒 (1-2小时，说明: 定期回收连接，避免长期使用导致的问题)
 }

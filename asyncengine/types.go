@@ -15,17 +15,6 @@ type Result struct {
 	Data any `json:"data,omitempty"`
 }
 
-// NotifyTarget 任务归属与通知人，SubmitFunc 必传。
-// EmployeeNo 为通知人，必填；HospitalNo / ShopNo 用于查询鉴权与通知路由。
-type NotifyTarget struct {
-	// HospitalNo 医院编号。
-	HospitalNo string `json:"hospitalNo,omitempty"`
-	// ShopNo 门店编号。
-	ShopNo string `json:"shopNo,omitempty"`
-	// EmployeeNo 通知人（员工编号），必填。
-	EmployeeNo string `json:"employeeNo,omitempty"`
-}
-
 // TaskFn 异步任务执行体（闭包）。
 //
 // 入参:
@@ -44,20 +33,16 @@ type Completion struct {
 	Result Result
 	// Err 失败原因；成功时为 nil。
 	Err error
-	// Notify 提交时绑定的归属信息，便于回调侧路由通知。
-	Notify NotifyTarget
-}
-
-// Logger 可选日志接口；Config.Logger 为 nil 时引擎不输出日志。
-type Logger interface {
-	// Infof 输出信息级日志，format/args 语义同 fmt.Printf。
-	Infof(format string, args ...any)
-	// Errorf 输出错误级日志，format/args 语义同 fmt.Printf。
-	Errorf(format string, args ...any)
+	// Meta 提交时绑定的自定义元数据，原样回传。
+	Meta map[string]string
 }
 
 // Config 创建 Runner 时的配置项。
 type Config struct {
+	// Namespace 服务命名空间，必填，用于隔离 Redis key（如 "api-pet"）。
+	// 同一服务的多实例应使用相同值；不同服务应使用不同值，避免 pending 对账互相影响。
+	// 键名形如：asyncengine:{Namespace}:result:{taskID}、asyncengine:{Namespace}:pending。
+	Namespace string
 	// Workers 并发 worker 数量；<=0 时使用默认值 4。
 	Workers int
 	// TaskTimeout 单个任务最长执行时间；<=0 时默认 10 分钟。
@@ -65,12 +50,7 @@ type Config struct {
 	// 若 TaskFn 返回 error，按该错误标 FAILED；
 	// 若 TaskFn 在超时后仍返回 nil，引擎会按 "task timeout" 标 FAILED。
 	TaskTimeout time.Duration
-	// KeyPrefix Redis key 前缀，默认 "asyncengine"。
-	// 实际 key 形如：{KeyPrefix}:result:{taskID}、{KeyPrefix}:pending。
-	KeyPrefix string
 	// OnComplete 任务终态回调（成功或运行中失败）；可为 nil。
 	// 进程重启对账导致的失败不会触发该回调（notifyCB=false）。
 	OnComplete func(Completion)
-	// Logger 可选日志实现；nil 表示静默。
-	Logger Logger
 }
